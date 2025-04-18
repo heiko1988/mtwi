@@ -1,0 +1,89 @@
+/**
+ * Motor Town Web Interface (MTWI) - Helles Design
+ */
+
+body[data-theme="light"] {
+    --bg-color: #f8f9fa;
+    --text-color: #212529;
+    --card-bg: #ffffff;
+    --card-border: #dee2e6;
+    --card-header-bg: #f1f3f5;
+    --input-bg: #ffffff;
+    --input-border: #ced4da;
+    --table-border: #dee2e6;
+    --table-stripe: #f8f9fa;
+    --table-hover: #e9ecef;
+    --nav-bg: #0d6efd;
+    --nav-color: #ffffff;
+    --dropdown-bg: #ffffff;
+    --dropdown-color: #212529;
+    --dropdown-hover: #f8f9fa;
+    
+    background-color: var(--bg-color);
+    color: var(--text-color);
+}
+
+body[data-theme="light"] .card {
+    background-color: var(--card-bg);
+    border-color: var(--card-border);
+}
+
+body[data-theme="light"] .card-header {
+    background-color: var(--card-header-bg);
+    border-color: var(--card-border);
+}
+
+body[data-theme="light"] .form-control,
+body[data-theme="light"] .form-select {
+    background-color: var(--input-bg);
+    border-color: var(--input-border);
+    color: var(--text-color);
+}
+
+body[data-theme="light"] .table {
+    color: var(--text-color);
+    border-color: var(--table-border);
+}
+
+body[data-theme="light"] .table-striped tbody tr:nth-of-type(odd) {
+    background-color: var(--table-stripe);
+}
+
+body[data-theme="light"] .table-hover tbody tr:hover {
+    background-color: var(--table-hover);
+}
+
+body[data-theme="light"] .dropdown-menu {
+    background-color: var(--dropdown-bg);
+    border-color: var(--card-border);
+}
+
+body[data-theme="light"] .dropdown-item {
+    color: var(--dropdown-color);
+}
+
+body[data-theme="light"] .dropdown-item:hover {
+    background-color: var(--dropdown-hover);
+}
+
+/* Spezielle Farben für Status-Anzeigen */
+body[data-theme="light"] .status-active {
+    color: #198754;
+}
+
+body[data-theme="light"] .status-pending {
+    color: #fd7e14;
+}
+
+body[data-theme="light"] .status-expired {
+    color: #6c757d;
+}
+
+/* Online/Offline Indikatoren */
+body[data-theme="light"] .status-online {
+    color: #198754;
+}
+
+body[data-theme="light"] .status-offline {
+    color: #6c757d;
+}

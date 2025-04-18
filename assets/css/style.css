@@ -1,0 +1,216 @@
+/**
+ * Motor Town Web Interface (MTWI) - Hauptstildatei
+ */
+
+/* Allgemeine Styles */
+:root {
+    --font-main: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    --transition-speed: 0.3s;
+}
+
+body {
+    font-family: var(--font-main);
+    transition: background-color var(--transition-speed), color var(--transition-speed);
+}
+
+.main-container {
+    min-height: calc(100vh - 120px);
+    padding-bottom: 2rem;
+}
+
+/* Karten und Container */
+.card {
+    transition: background-color var(--transition-speed), border-color var(--transition-speed);
+    margin-bottom: 1.5rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.card-header {
+    font-weight: 600;
+    border-radius: 8px 8px 0 0 !important;
+}
+
+/* Dashboard */
+.stat-card {
+    text-align: center;
+    padding: 1.5rem;
+}
+
+.stat-number {
+    font-size: 3rem;
+    font-weight: 700;
+    line-height: 1;
+    margin: 0.5rem 0;
+}
+
+.stat-label {
+    font-size: 1rem;
+    opacity: 0.8;
+}
+
+/* Tabellen */
+.table-responsive {
+    overflow-x: auto;
+    border-radius: 4px;
+}
+
+.table th {
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.table td {
+    vertical-align: middle;
+}
+
+.no-data-message {
+    text-align: center;
+    padding: 2rem;
+    opacity: 0.6;
+}
+
+/* Buttons und Aktionen */
+.btn {
+    border-radius: 6px;
+    padding: 0.5rem 1rem;
+    transition: all 0.2s;
+}
+
+.btn-icon {
+    padding: 0.25rem 0.5rem;
+    margin-right: 0.25rem;
+}
+
+.btn-group .btn {
+    margin-right: 0.25rem;
+}
+
+/* Badges */
+.badge {
+    padding: 0.5rem 0.7rem;
+    font-weight: 500;
+    border-radius: 30px;
+}
+
+/* Formularelemente */
+.form-control, .form-select {
+    border-radius: 6px;
+    transition: border-color var(--transition-speed), box-shadow var(--transition-speed);
+    padding: 0.5rem 0.75rem;
+}
+
+.form-label {
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+}
+
+/* Timer und Zeitanzeige */
+.timer {
+    font-family: monospace;
+    font-weight: 600;
+}
+
+/* Einrichtungsassistent */
+.setup-container {
+    max-width: 800px;
+    margin: 3rem auto;
+}
+
+.setup-header {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.setup-step {
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.setup-navigation {
+    margin-top: 2rem;
+    display: flex;
+    justify-content: space-between;
+}
+
+/* Chat-Bereich */
+.chat-container {
+    border-radius: 8px;
+    margin-bottom: 1.5rem;
+}
+
+.message-history {
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.message-form {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.message-form .form-control {
+    flex-grow: 1;
+}
+
+/* Ladeanimation */
+.spinner-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 2rem;
+}
+
+/* Responsive-Anpassungen */
+@media (max-width: 768px) {
+    .card-header-actions {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .card-header-actions .btn {
+        margin-top: 0.5rem;
+    }
+    
+    .table th, .table td {
+        white-space: nowrap;
+    }
+}
+
+/* Animationen */
+.fade-in {
+    animation: fadeIn 0.5s ease-in;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+/* Tooltip */
+.tooltip {
+    position: relative;
+    display: inline-block;
+}
+
+.tooltip .tooltiptext {
+    visibility: hidden;
+    width: 120px;
+    background-color: rgba(0, 0, 0, 0.8);
+    color: #fff;
+    text-align: center;
+    border-radius: 6px;
+    padding: 5px;
+    position: absolute;
+    z-index: 1;
+    bottom: 125%;
+    left: 50%;
+    margin-left: -60px;
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+
+.tooltip:hover .tooltiptext {
+    visibility: visible;
+    opacity: 1;
+}

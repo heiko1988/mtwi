@@ -1,0 +1,260 @@
+/**
+ * Motor Town Web Interface (MTWI) - Dunkles Design
+ */
+
+body[data-theme="dark"] {
+    --bg-color: #212529;
+    --text-color: #f8f9fa;
+    --card-bg: #2b3035;
+    --card-border: #495057;
+    --card-header-bg: #343a40;
+    --input-bg: #343a40;
+    --input-border: #495057;
+    --table-border: #495057;
+    --table-stripe: #2b3035;
+    --table-hover: #343a40;
+    --nav-bg: #0d6efd;
+    --nav-color: #ffffff;
+    --dropdown-bg: #343a40;
+    --dropdown-color: #f8f9fa;
+    --dropdown-hover: #2b3035;
+    
+    background-color: var(--bg-color);
+    color: var(--text-color);
+}
+
+body[data-theme="dark"] .card {
+    background-color: var(--card-bg);
+    border-color: var(--card-border);
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.3);
+}
+
+body[data-theme="dark"] .card-header {
+    background-color: var(--card-header-bg);
+    border-color: var(--card-border);
+}
+
+body[data-theme="dark"] .card-header h5,
+body[data-theme="dark"] .card-header .card-title {
+    color: #ffffff !important;
+    font-weight: 500;
+}
+
+body[data-theme="dark"] .form-control,
+body[data-theme="dark"] .form-select {
+    background-color: var(--input-bg);
+    border-color: var(--input-border);
+    color: var(--text-color);
+}
+
+/* Bessere Sichtbarkeit für Eingabefelder im Chat */
+body[data-theme="dark"] #chatMessage {
+    background-color: #2d3338;
+    color: #ffffff;
+    border-color: #495057;
+}
+
+body[data-theme="dark"] #chatMessage::placeholder {
+    color: #adb5bd;
+    opacity: 1;
+}
+
+body[data-theme="dark"] .table {
+    color: var(--text-color);
+    border-color: var(--table-border);
+    background-color: var(--card-bg);
+}
+
+body[data-theme="dark"] .table th {
+    background-color: var(--card-header-bg);
+    color: var(--text-color);
+    border-color: var(--table-border);
+}
+
+body[data-theme="dark"] .table td {
+    border-color: var(--table-border);
+}
+
+body[data-theme="dark"] .table-striped>tbody>tr:nth-of-type(odd)>* {
+    background-color: var(--table-stripe);
+    --bs-table-striped-bg: var(--table-stripe);
+    color: var(--text-color);
+}
+
+body[data-theme="dark"] .table-hover tbody tr:hover,
+body[data-theme="dark"] .table-hover>tbody>tr:hover>* {
+    background-color: var(--table-hover);
+    --bs-table-hover-bg: var(--table-hover);
+    color: var(--text-color);
+}
+
+body[data-theme="dark"] .dropdown-menu {
+    background-color: var(--dropdown-bg);
+    border-color: var(--card-border);
+}
+
+body[data-theme="dark"] .dropdown-item {
+    color: var(--dropdown-color);
+}
+
+body[data-theme="dark"] .dropdown-item:hover {
+    background-color: var(--dropdown-hover);
+}
+
+/* Anpassungen für Modals im Dark Mode */
+body[data-theme="dark"] .modal-content {
+    background-color: var(--card-bg);
+    border-color: var(--card-border);
+}
+
+body[data-theme="dark"] .modal-header,
+body[data-theme="dark"] .modal-footer {
+    border-color: var(--card-border);
+}
+
+/* Dashboard-Elemente im Dark Mode */
+body[data-theme="dark"] .dashboard-stat h3,
+body[data-theme="dark"] .dashboard-stat h4,
+body[data-theme="dark"] .dashboard-stat p,
+body[data-theme="dark"] .dashboard-stat .fa,
+body[data-theme="dark"] .dashboard-stat .fas,
+body[data-theme="dark"] .dashboard-stat .far,
+body[data-theme="dark"] .card-title,
+body[data-theme="dark"] .card-body {
+    color: #ffffff !important;
+}
+
+/* Spieleranzahl und andere Statistiken im Dark Mode */
+body[data-theme="dark"] .player-count,
+body[data-theme="dark"] .count-number,
+body[data-theme="dark"] .count-label,
+body[data-theme="dark"] .count-container,
+body[data-theme="dark"] .stat-number,
+body[data-theme="dark"] .stat-label,
+body[data-theme="dark"] .stat-card,
+body[data-theme="dark"] .display-4,
+body[data-theme="dark"] .bi {
+    color: #ffffff !important;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+/* Spezifische Anpassungen für Statistik-Karten */
+body[data-theme="dark"] .stat-card {
+    background-color: var(--card-bg);
+    border-color: var(--card-border);
+    text-align: center;
+    padding: 1.5rem;
+}
+
+/* Bessere Lesbarkeit für alle Texte im Dark Mode */
+body[data-theme="dark"] .text-muted,
+body[data-theme="dark"] .small,
+body[data-theme="dark"] small,
+body[data-theme="dark"] .text-secondary {
+    color: #adb5bd !important;
+}
+
+/* Verbesserte Schnellnachrichten-Buttons */
+body[data-theme="dark"] .btn-outline-secondary {
+    color: #ffffff;
+    border-color: #6c757d;
+    background-color: #3a4148;
+}
+
+body[data-theme="dark"] .btn-outline-secondary:hover {
+    color: #ffffff;
+    background-color: #495057;
+    border-color: #6c757d;
+}
+
+body[data-theme="dark"] .send-quick-message {
+    color: #ffffff !important;
+    border-color: #5c636a !important;
+    background-color: #3a4148 !important;
+}
+
+body[data-theme="dark"] .send-quick-message:hover {
+    color: #ffffff !important;
+    background-color: #495057 !important;
+    border-color: #6c757d !important;
+}
+
+/* Chat-Nachrichten und Nachrichtenelemente */
+body[data-theme="dark"] .message-item,
+body[data-theme="dark"] .message-history {
+    background-color: #343a40;
+    color: #ffffff;
+    border-color: #495057;
+}
+
+body[data-theme="dark"] .message-history {
+    border: 1px solid #495057;
+    border-radius: 0.25rem;
+}
+
+body[data-theme="dark"] #quickMessagesContainer .btn {
+    margin: 0.25rem;
+    padding: 0.375rem 0.75rem;
+    font-weight: 500;
+}
+
+/* Überschriften für Dashboard, Spielerlisten, Chat, etc. */
+body[data-theme="dark"] h1,
+body[data-theme="dark"] h2,
+body[data-theme="dark"] h3,
+body[data-theme="dark"] h4,
+body[data-theme="dark"] h5,
+body[data-theme="dark"] h6,
+body[data-theme="dark"] .h1,
+body[data-theme="dark"] .h2,
+body[data-theme="dark"] .h3,
+body[data-theme="dark"] .h4,
+body[data-theme="dark"] .h5,
+body[data-theme="dark"] .h6 {
+    color: #f8f9fa !important;
+}
+
+/* Spezielle Hervorhebung für wichtige Bereiche */
+body[data-theme="dark"] .card-header h5:first-child,
+body[data-theme="dark"] .table th,
+body[data-theme="dark"] .section-title,
+body[data-theme="dark"] .page-header,
+body[data-theme="dark"] .category-header {
+    color: #ffffff !important;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+/* Anpassungen für Alerts im Dark Mode */
+body[data-theme="dark"] .alert {
+    border-color: transparent;
+}
+
+/* Spezielle Farben für Status-Anzeigen */
+body[data-theme="dark"] .status-active {
+    color: #2ecc71;
+}
+
+body[data-theme="dark"] .status-pending {
+    color: #f39c12;
+}
+
+body[data-theme="dark"] .status-expired {
+    color: #adb5bd;
+}
+
+/* Online/Offline Indikatoren */
+body[data-theme="dark"] .status-online {
+    color: #2ecc71;
+}
+
+body[data-theme="dark"] .status-offline {
+    color: #adb5bd;
+}
+
+/* Tooltips */
+body[data-theme="dark"] .tooltip .tooltiptext {
+    background-color: rgba(255, 255, 255, 0.8);
+    color: #212529;
+}
