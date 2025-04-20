@@ -42,6 +42,38 @@ if (!in_array($action, $publicActions) && !isLoggedIn()) {
 
 // Aktionen verarbeiten
 switch ($action) {
+    // Server Control (Start/Stop/Restart/Status)
+    case 'server_control':
+        $cmd = isset($_POST['command']) ? $_POST['command'] : '';
+        $allowed = ['start','stop','restart','status'];
+        if (!in_array($cmd, $allowed)) {
+            sendResponse(false, 'Ungültiger Befehl!');
+        }
+        $chatConfig = $config['chat_server'];
+        $url = rtrim($chatConfig['url'], '/');
+        $port = $chatConfig['port'];
+        $username = $chatConfig['username'];
+        $password = $chatConfig['password'];
+        $endpoint = $url . ':' . $port . '/server/' . $cmd;
+        $opts = [
+            'http' => [
+                'method' => 'POST',
+                'header' => 'Authorization: Basic ' . base64_encode($username . ':' . $password) . "\r\nContent-Length: 0",
+                'content' => ''
+            ]
+        ];
+        $context = stream_context_create($opts);
+        $result = @file_get_contents($endpoint, false, $context);
+        if ($result === FALSE) {
+            sendResponse(false, 'Server nicht erreichbar!');
+        }
+        $data = json_decode($result, true);
+        if (!$data || !is_array($data)) {
+            sendResponse(false, 'Ungültige Antwort vom Server!');
+        }
+        // Erwartet: { success: true/false, status: 'running'/'stopped'/..., message: '...' }
+        sendResponse($data['success'] ?? false, $data['message'] ?? '', [ 'status' => $data['status'] ?? '', 'detail' => $data['detail'] ?? '' ]);
+        break;
     // LIVE CHAT: Nachrichten abrufen
     case 'get_live_chat_messages':
         $chatConfig = $config['chat_server'];
@@ -159,16 +191,13 @@ $testClient = new ApiClient($apiUrl, $apiPassword);
     case 'get_dashboard_data':
         // Spieleranzahl abrufen
         $playerCount = $apiClient->getPlayerCount();
-        
         if ($playerCount === false) {
-            sendResponse(false, 'Fehler beim Abrufen der Spieleranzahl: ' . $apiClient->getLastError());
+            $playerCount = 0; // Fehler unterdrücken, einfach 0 Spieler anzeigen
         }
-        
         // Spielerliste abrufen
         $playerList = $apiClient->getPlayerList();
-        
         if ($playerList === false) {
-            sendResponse(false, 'Fehler beim Abrufen der Spielerliste: ' . $apiClient->getLastError());
+            $playerList = [];
         }
         
         // Spielerliste in Array umwandeln
@@ -200,9 +229,12 @@ $testClient = new ApiClient($apiUrl, $apiPassword);
         // Kürzlich abgemeldete Spieler abrufen (jetzt aktuell nach dem Markieren)
         $recentPlayers = $db->getRecentlyOfflinePlayers(10);
         
+        // Aktuelle Bans zählen
+        $banCount = count($db->getActiveBans());
         // Daten zurückgeben
         sendResponse(true, '', [
             'player_count' => isset($playerCount['num_players']) ? $playerCount['num_players'] : 0,
+            'ban_count' => $banCount,
             'active_players' => $activePlayersList,
             'recent_players' => $recentPlayers
         ]);

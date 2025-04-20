@@ -7,7 +7,17 @@ Dieses Tool ermöglicht es, die Chat-Nachrichten aus den Motor Town Dedicated Se
 - Modernes, responsives Web-Frontend (Bootstrap)
 - Sicherer Zugriff per HTTP Basic Auth (Benutzername/Passwort)
 - REST-API-Endpoint (`/chatlog`) für PHP/andere Tools
+- **Serversteuerung per REST-API:**
+  - `/server/status`  – Serverstatus (running/stopped) abfragen
+  - `/server/start`   – Server starten
+  - `/server/stop`    – Server stoppen
+  - `/server/restart` – Server neustarten
+- **Serversteuerung im Web-Frontend:**
+  - Buttons für Start, Stop, Restart und Statusanzeige direkt im Webinterface
+- **Integration mit MTWI Dashboard:**
+  - Ermöglicht die Steuerung und Statusanzeige des Windows-Servers direkt aus dem MTWI Dashboard
 - Einfach zu konfigurieren und zu starten
+- Diverse Bugfixes und Verbesserungen
 
 ## Installation & Nutzung
 
@@ -27,13 +37,39 @@ Dieses Tool ermöglicht es, die Chat-Nachrichten aus den Motor Town Dedicated Se
      LOG_DIR = r'C:/Pfad/zu/deinen/Logs'  # <--- ANPASSEN!
      USERNAME = 'admin'                   # <--- ANPASSEN!
      PASSWORD = 'dein_geheimes_passwort'  # <--- ANPASSEN!
+     SERVER_BAT = r'C:/Pfad/zur/RunDedicatedServer.bat'  # <--- ANPASSEN!
+     SERVER_PROCNAME = 'MotorTownServer-Win64-Shipping.exe' # <--- ANPASSEN Falls Nötig!
      ```
+   - **Hinweis:** Für die Serversteuerung müssen `SERVER_BAT` und `SERVER_PROCNAME` korrekt gesetzt sein!
 
 4. **Server starten**
    ```bash
-     waitress-serve --listen=0.0.0.0:5005 chat_server:app
+   waitress-serve --listen=0.0.0.0:5005 chat_server:app
    ```
    - Der Server läuft dann z.B. auf `http://localhost:5005/`
+
+5. **REST-API für Serversteuerung nutzen**
+   - Alle Endpunkte erfordern HTTP Basic Auth (wie beim Chat-Log)
+   - Beispiele:
+     - **Status abfragen:**
+       ```bash
+       curl -u admin:admin http://localhost:5005/server/status
+       ```
+     - **Server starten:**
+       ```bash
+       curl -X POST -u admin:admin http://localhost:5005/server/start
+       ```
+     - **Server stoppen:**
+       ```bash
+       curl -X POST -u admin:admin http://localhost:5005/server/stop
+       ```
+     - **Server neustarten:**
+       ```bash
+       curl -X POST -u admin:admin http://localhost:5005/server/restart
+       ```
+
+6. **Integration ins MTWI Dashboard**
+   - Die Steuerungs-Buttons und Statusanzeige erscheinen dann im Dashboard
 
 
 5. **Webseite aufrufen**
@@ -90,7 +126,7 @@ This tool allows you to read chat messages from Motor Town Dedicated Server log 
 
 4. **Start the server**
    ```bash
-     waitress-serve --listen=0.0.0.0:5005 chat_server:app
+  waitress-serve --listen=0.0.0.0:5005 chat_server:app
    ```
    - The server will then run at e.g. `http://localhost:5005/`
 
@@ -110,5 +146,6 @@ This tool allows you to read chat messages from Motor Town Dedicated Server log 
 Just report them via the web interface or modify the code yourself!
 
 ---
+
 
 

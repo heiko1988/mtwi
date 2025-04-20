@@ -152,4 +152,17 @@ $lang = [
     'success_player_kicked' => 'Player has been kicked',
     'success_player_banned' => 'Player has been banned',
     'success_player_unbanned' => 'Player has been unbanned',
+
+    // Server Control
+    'server_control' => 'Server Control',
+    'server_start' => 'Start',
+    'server_restart' => 'Restart',
+    'server_stop' => 'Stop',
+
+    // Server Control Modal
+    'server_stop_title' => 'Stop server',
+    'server_stop_confirm' => 'Are you sure you want to stop the server?',
+    'server_restart_title' => 'Restart server',
+    'server_restart_confirm' => 'Are you sure you want to restart the server?',
+    'yes_execute' => 'Yes, execute',
 ];

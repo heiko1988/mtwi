@@ -1,0 +1,18 @@
+<!-- Bootstrap Modal für Server-Stop/Restart Bestätigung -->
+<div class="modal fade" id="serverConfirmModal" tabindex="-1" aria-labelledby="serverConfirmModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="serverConfirmModalLabel" data-i18n="confirm"><?php echo t('confirm'); ?></h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Schließen"></button>
+      </div>
+      <div class="modal-body">
+        <span id="serverConfirmModalText" data-i18n="confirm_action">Bist du sicher?</span> <!-- Wird via JS überschrieben -->
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-i18n="cancel"><?php echo t('cancel'); ?></button>
+        <button type="button" class="btn btn-danger" id="serverConfirmModalConfirm" data-i18n="yes_execute">Ja, ausführen</button>
+      </div>
+    </div>
+  </div>
+</div>

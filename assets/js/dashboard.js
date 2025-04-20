@@ -5,6 +5,11 @@
 let refreshTimer;
 
 $(document).ready(function() {
+    // Server-Control-Script initialisieren (falls nicht schon eingebunden)
+    if (typeof window.serverControlLoaded === 'undefined') {
+        $.getScript('assets/js/server_control.js', function(){ window.serverControlLoaded = true; });
+    }
+
     // Initial Daten laden
     refreshData();
     
@@ -143,6 +148,9 @@ function refreshData() {
 function updateDashboard(data) {
     // Spielerzahl aktualisieren
     $('#playerCount').text(data.player_count);
+    if (typeof data.ban_count !== 'undefined') {
+        $('#banCount').text(data.ban_count);
+    }
     
     // Aktive Spielerliste aktualisieren
     updatePlayerTable(data.active_players);

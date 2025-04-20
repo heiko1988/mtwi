@@ -10,10 +10,13 @@ Das **Motor Town Web Interface (MTWI)** ist ein benutzerfreundliches, webbasiert
 - ✔ **Live-Chat:** Kommuniziere in Echtzeit mit Spielern auf deinem Server.
 - ✔ **Dashboard:** Verwalte Online-Spieler, verbanne Nutzer oder erhalte Server-Statistiken.
 - ✔ **Bannverwaltung:** Sperre oder entsperre Spieler mit wenigen Klicks.
+- ✔ **Ban-Widget:** Zeigt die aktuelle Anzahl aktiver Bans direkt im Dashboard an.
+- ✔ **Serversteuerung:** Starte, stoppe oder starte den Windows-Server neu direkt aus dem Dashboard (inkl. Statusanzeige).
 - ✔ **Mehrsprachigkeit:** Unterstützt Deutsch und Englisch (einfach erweiterbar).
 - ✔ **Einstellungen:** Konfiguriere Serververbindung, Sprache und weitere Optionen.
 - ✔ **Schnellnachrichten:** Sende vordefinierte Chat-Nachrichten für effiziente Kommunikation.
 - ✔ **Windows Chat-Server:** Eine mitgelieferte Python-Lösung (`win_server_chat_logs`) ermöglicht die Live-Chat-Integration (inkl. Installationsanleitung).
+- ✔ **Bugfixes:** Diverse kleinere Fehlerbehebungen und Verbesserungen.
 
 ### 🚀 Installation
 1. **Dateien hochladen:** Kopiere den Inhalt des `release`-Ordners auf deinen Webserver.
@@ -50,10 +53,13 @@ The **Motor Town Web Interface (MTWI)** is a user-friendly, web-based admin pane
 - ✔ **Live Chat:** Communicate in real-time with players on your server.
 - ✔ **Dashboard:** Manage online players, ban users, or view server statistics.
 - ✔ **Ban Management:** Ban or unban players with just a few clicks.
+- ✔ **Ban Widget:** Displays the current number of active bans directly on the dashboard.
+- ✔ **Server Control:** Start, stop, or restart your Windows server directly from the dashboard (including status display).
 - ✔ **Multi-Language:** Supports German and English (easily extendable).
 - ✔ **Settings:** Configure server connection, language, and other options.
 - ✔ **Quick Messages:** Send predefined chat messages for efficient communication.
 - ✔ **Windows Chat Server:** Includes a Python-based solution (`win_server_chat_logs`) for live chat integration (installation guide included).
+- ✔ **Bugfixes:** Various minor bugfixes and improvements.
 
 ### 🚀 Installation
 1. **Upload Files:** Copy the contents of the `release` folder to your web server.

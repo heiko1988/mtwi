@@ -1,15 +1,22 @@
-from flask import Flask, request, jsonify, render_template_string
+from flask import Flask, request, jsonify, render_template_string, redirect, url_for
 from pathlib import Path
 import re
 import os
 from functools import wraps
 import base64
+import subprocess
+import psutil
+import time
 
 # === Konfiguration ===
-LOG_DIR = r'C:/Pfad/zu/deinen/Logs'  # <--- ANPASSEN!
+LOG_DIR = r'C:\Program Files (x86)\Steam\steamapps\common\Motor Town Behind The Wheel - Dedicated Server\MotorTown\Saved\ServerLog'  # <--- ANPASSEN!
 USERNAME = 'admin'                   # <--- ANPASSEN!
-PASSWORD = 'dein_geheimes_passwort'  # <--- ANPASSEN!
+PASSWORD = 'admin'  # <--- ANPASSEN!
 MAX_CHAT_LINES = 100
+# Pfad zur Batch-Datei, die den Server startet
+SERVER_BAT = r'C:/Program Files (x86)/Steam/steamapps/common/Motor Town Behind The Wheel - Dedicated Server/RunDedicatedServer.bat'  # <--- ANPASSEN!
+# Name des Server-Prozesses
+SERVER_PROCNAME = 'MotorTownServer-Win64-Shipping.exe' # <--- ANPASSEN Falls Verändert!
 
 app = Flask(__name__)
 
@@ -74,6 +81,80 @@ def chatlog():
     lines = get_latest_chat_lines()
     return jsonify(lines)
 
+# === Server-Prozesssteuerung ===
+def is_server_running():
+    for proc in psutil.process_iter(['name']):
+        try:
+            if proc.info['name'] and SERVER_PROCNAME.lower() in proc.info['name'].lower():
+                return proc
+        except (psutil.NoSuchProcess, psutil.AccessDenied):
+            continue
+    return None
+
+def start_server():
+    if is_server_running():
+        return False, 'Server läuft bereits.'
+    try:
+        bat_dir = os.path.dirname(SERVER_BAT)
+        # Batch-Datei als String, shell=True, CWD setzen
+        subprocess.Popen(SERVER_BAT, shell=True, cwd=bat_dir, creationflags=subprocess.CREATE_NEW_CONSOLE)
+        time.sleep(2)  # Kurz warten, damit Prozess starten kann
+        if is_server_running():
+            return True, 'Server wurde gestartet.'
+        else:
+            return False, 'Startbefehl ausgeführt, aber Prozess nicht gefunden.'
+    except Exception as e:
+        return False, f'Fehler beim Start: {e}'
+
+def stop_server():
+    proc = is_server_running()
+    if not proc:
+        return False, 'Server läuft nicht.'
+    try:
+        proc.terminate()
+        try:
+            proc.wait(timeout=10)
+        except psutil.TimeoutExpired:
+            proc.kill()
+        return True, 'Server wurde gestoppt.'
+    except Exception as e:
+        return False, f'Fehler beim Stoppen: {e}'
+
+def restart_server():
+    stop_server()
+    time.sleep(2)
+    return start_server()
+
+# === API-Endpunkte für Steuerung ===
+@app.route('/server/status', methods=['GET', 'POST'])
+@requires_auth
+def server_status():
+    server_laeuft = is_server_running() is not None
+    return jsonify({
+        "success": True,
+        "status": "running" if server_laeuft else "stopped",
+        "message": "Server läuft" if server_laeuft else "Server gestoppt",
+        "detail": ""
+    })
+
+@app.route('/server/start', methods=['POST'])
+@requires_auth
+def server_start():
+    ok, msg = start_server()
+    return jsonify({'success': ok, 'message': msg})
+
+@app.route('/server/stop', methods=['POST'])
+@requires_auth
+def server_stop():
+    ok, msg = stop_server()
+    return jsonify({'success': ok, 'message': msg})
+
+@app.route('/server/restart', methods=['POST'])
+@requires_auth
+def server_restart():
+    ok, msg = restart_server()
+    return jsonify({'success': ok, 'message': msg})
+
 # === Minimales Frontend ===
 @app.route('/')
 @requires_auth
@@ -93,17 +174,26 @@ def index():
         .chat-user { font-weight: bold; }
         .chat-time { color: #888; font-size: 0.9em; margin-right: 8px; }
         .chat-message { white-space: pre-line; }
+        .server-status { font-weight:bold; }
     </style>
 </head>
 <body>
 <div class="chat-box">
     <h3>MTWI Chat Log <span id="loading" class="text-primary" style="font-size:0.7em;display:none;">(Loading...)</span></h3>
+    <div class="mb-3">
+        <span>Server Status: <span id="serverStatus" class="server-status">...</span></span>
+        <button class="btn btn-success btn-sm ms-2" onclick="serverAction('start')">Start</button>
+        <button class="btn btn-warning btn-sm ms-1" onclick="serverAction('restart')">Restart</button>
+        <button class="btn btn-danger btn-sm ms-1" onclick="serverAction('stop')">Stop</button>
+        <span id="serverMsg" class="ms-2"></span>
+    </div>
     <div id="chatlog"></div>
 </div>
 <script>
+    const authHeader = { 'Authorization': 'Basic ' + btoa('{{USERNAME}}:{{PASSWORD}}') };
     async function loadChat() {
         document.getElementById('loading').style.display = 'inline';
-        let resp = await fetch('/chatlog', {headers: { 'Authorization': 'Basic ' + btoa('{{USERNAME}}:{{PASSWORD}}') }});
+        let resp = await fetch('/chatlog', {headers: authHeader});
         if (resp.ok) {
             let data = await resp.json();
             let html = '';
@@ -116,8 +206,30 @@ def index():
         }
         document.getElementById('loading').style.display = 'none';
     }
+    async function loadStatus() {
+        let resp = await fetch('/server/status', {headers: authHeader});
+        if (resp.ok) {
+            let data = await resp.json();
+            let el = document.getElementById('serverStatus');
+            el.textContent = data.running ? 'LÄUFT' : 'GESTOPPT';
+            el.style.color = data.running ? 'green' : 'red';
+        }
+    }
+    async function serverAction(action) {
+        document.getElementById('serverMsg').textContent = 'Bitte warten...';
+        let resp = await fetch('/server/' + action, {method:'POST', headers: authHeader});
+        if (resp.ok) {
+            let data = await resp.json();
+            document.getElementById('serverMsg').textContent = data.message;
+        } else {
+            document.getElementById('serverMsg').textContent = 'Fehler bei der Aktion.';
+        }
+        loadStatus();
+    }
     loadChat();
+    loadStatus();
     setInterval(loadChat, 10000);
+    setInterval(loadStatus, 5000);
 </script>
 </body>
 </html>

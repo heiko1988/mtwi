@@ -152,4 +152,17 @@ $lang = [
     'success_player_kicked' => 'Spieler wurde gekickt',
     'success_player_banned' => 'Spieler wurde gebannt',
     'success_player_unbanned' => 'Spieler wurde entbannt',
+
+    // Server Control
+    'server_control' => 'Serversteuerung',
+    'server_start' => 'Starten',
+    'server_restart' => 'Neustarten',
+    'server_stop' => 'Stoppen',
+
+    // Server Control Modal
+    'server_stop_title' => 'Server stoppen',
+    'server_stop_confirm' => 'Bist du sicher, dass du den Server stoppen möchtest?',
+    'server_restart_title' => 'Server neustarten',
+    'server_restart_confirm' => 'Bist du sicher, dass du den Server neustarten möchtest?',
+    'yes_execute' => 'Ja, ausführen',
 ];

@@ -431,14 +431,10 @@ class Database {
     /**
      * Markiert Spieler als offline, die nicht mehr in der aktiven Spielerliste sind
      * 
-     * @param array $playerList  Liste der aktiven Spieler vom Server
-     * @return int               Anzahl der als offline markierten Spieler
+     * @param array $playerList Liste der aktuellen Spieler
+     * @return int Anzahl der markierten Spieler
      */
     public function markOfflinePlayers($playerList) {
-        // Debug-Protokoll erstellen
-        $debugMsg = date('Y-m-d H:i:s') . " - markOfflinePlayers aufgerufen\n";
-        $debugMsg .= "Aktive Spielerliste: " . print_r($playerList, true) . "\n";
-        
         // Aktive Spieler-IDs sammeln
         $activeIds = [];
         foreach ($playerList as $player) {
@@ -446,64 +442,26 @@ class Database {
                 $activeIds[] = $player['unique_id'];
             }
         }
-        
-        $debugMsg .= "Aktive IDs: " . implode(", ", $activeIds) . "\n";
-        
-        // Aktuell als online markierte Spieler abrufen
-        $stmt = $this->db->prepare("SELECT unique_id, player_name FROM player_history WHERE last_action = 'online'");
+        // Alle aktuell als online markierten Spieler abrufen
+        $stmt = $this->db->prepare("SELECT unique_id FROM player_history WHERE last_action = 'online'");
         $stmt->execute();
         $onlinePlayers = $stmt->fetchAll();
-        
-        $debugMsg .= "Als online markiert in DB: " . count($onlinePlayers) . " Spieler\n";
-        foreach ($onlinePlayers as $player) {
-            $debugMsg .= "ID: " . $player['unique_id'] . ", Name: " . $player['player_name'] . "\n";
-        }
-        
-        // Wenn keine aktiven Spieler von API, alle online markierten in DB auf offline setzen
-        if (empty($activeIds)) {
-            $debugMsg .= "Keine aktiven Spieler mehr! Setze alle auf offline.\n";
-            $stmt = $this->db->prepare("UPDATE player_history SET last_action = 'offline', last_seen = ? WHERE last_action = 'online'");
-            $stmt->execute([time()]);
-            $updatedCount = $stmt->rowCount();
-            $debugMsg .= "$updatedCount Spieler auf offline gesetzt\n";
-            
-            // Debug-Datei schreiben
-            file_put_contents('/var/www/html/nextcloud/mtwi/data/offline_marking_debug.log', $debugMsg, FILE_APPEND);
-            
-            return $updatedCount;
-        }
-        
-        // Platzhalter für die SQL-Abfrage erstellen
-        $placeholders = implode(',', array_fill(0, count($activeIds), '?'));
-        
         // Offline-Kandidaten identifizieren
         $offlineCandidates = [];
         foreach ($onlinePlayers as $player) {
             if (!in_array($player['unique_id'], $activeIds)) {
                 $offlineCandidates[] = $player['unique_id'];
-                $debugMsg .= "Markiere als offline: ID: " . $player['unique_id'] . ", Name: " . $player['player_name'] . "\n";
             }
         }
-        
-        // Als offline markieren
         if (!empty($offlineCandidates)) {
             $placeholdersOffline = implode(',', array_fill(0, count($offlineCandidates), '?'));
-            $stmt = $this->db->prepare("UPDATE player_history 
-                SET last_action = 'offline', last_seen = ? 
-                WHERE unique_id IN ($placeholdersOffline)");
-            
-            $params = [time()];
-            $params = array_merge($params, $offlineCandidates);
-            
+            $stmt = $this->db->prepare("UPDATE player_history SET last_action = 'offline', last_seen = ? WHERE unique_id IN ($placeholdersOffline)");
+            $params = array_merge([time()], $offlineCandidates);
             $stmt->execute($params);
             $updatedCount = $stmt->rowCount();
-            $debugMsg .= "$updatedCount Spieler auf offline gesetzt\n";
         } else {
             $updatedCount = 0;
-            $debugMsg .= "Keine Spieler zum Offline-Setzen gefunden\n";
         }
-        
-        
         return $updatedCount;
     }
     
