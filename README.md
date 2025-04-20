@@ -23,7 +23,7 @@ Das **Motor Town Web Interface (MTWI)** ist ein benutzerfreundliches, webbasiert
 2. **Datenbank:** Die SQLite-Datenbank (`data/mtwi.db`) wird automatisch erstellt.
 3. **Berechtigungen:** Stelle sicher, dass der Webserver Schreibzugriff auf `data/` und `config/` hat.
 4. **Chat-Server (optional):** Falls gewünscht, richte den Python-Chat-Server (`win_server_chat_logs/chat_server.py`) auf deinem Windows-Server ein.
-5. **Cronjob einrichten:**
+5. **Cronjob einrichten wo das webinterface läuft für Bans aktuell halten:**
    ```bash
    cd cron
    ./setup_cron.sh
@@ -66,7 +66,7 @@ The **Motor Town Web Interface (MTWI)** is a user-friendly, web-based admin pane
 2. **Database:** The SQLite database (`data/mtwi.db`) will be created automatically.
 3. **Permissions:** Ensure the web server has write access to `data/` and `config/`.
 4. **Chat Server (Optional):** If needed, set up the Python chat server (`win_server_chat_logs/chat_server.py`) on your Windows server.
-5. **Set up cronjob:**
+5. **Set up cronjob on the webinterface Server:**
    ```bash
    cd cron
    ./setup_cron.sh
