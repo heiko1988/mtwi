@@ -85,3 +85,15 @@ The **Motor Town Web Interface (MTWI)** is a user-friendly, web-based admin pane
 
 ### 👨‍💻 Credits
 Developed by **^Rainer^Zufall^** and **ki**
+
+
+## 📸 Screenshots
+
+### Dashboard
+![Dashboard](https://github.com/heiko1988/mtwi/blob/main/Screenshot/Dashboard.png?raw=true)
+
+### Ban-Widget
+![Ban-Widget](https://github.com/heiko1988/mtwi/blob/main/Screenshot/bans.png?raw=true)
+
+### Live-Chat
+![Live-Chat](https://github.com/heiko1988/mtwi/blob/main/Screenshot/live_chat.png?raw=true)
