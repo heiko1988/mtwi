@@ -31,7 +31,7 @@ Dieses Tool ermöglicht es, die Chat-Nachrichten aus den Motor Town Dedicated Se
 
 4. **Server starten**
    ```bash
-  waitress-serve --listen=0.0.0.0:5005 chat_server:app
+     waitress-serve --listen=0.0.0.0:5005 chat_server:app
    ```
    - Der Server läuft dann z.B. auf `http://localhost:5005/`
 
