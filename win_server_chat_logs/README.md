@@ -90,7 +90,7 @@ This tool allows you to read chat messages from Motor Town Dedicated Server log 
 
 4. **Start the server**
    ```bash
-  waitress-serve --listen=0.0.0.0:5005 chat_server:app
+     waitress-serve --listen=0.0.0.0:5005 chat_server:app
    ```
    - The server will then run at e.g. `http://localhost:5005/`
 
