@@ -27,7 +27,7 @@ Dieses Tool ermöglicht es, die Chat-Nachrichten aus den Motor Town Dedicated Se
 
 2. **Abhängigkeiten installieren**
    ```bash
-      pip install waitress
+      pip install waitress psutil flask
    ```
 
 3. **Pfad und Zugangsdaten anpassen**
@@ -112,7 +112,7 @@ This tool allows you to read chat messages from Motor Town Dedicated Server log 
 
 2. **Install dependencies**
    ```bash
-      pip install waitress
+      pip install waitress psutil flask
    ```
 
 3. **Adjust path and credentials**
