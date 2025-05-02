@@ -1,5 +1,6 @@
 <div class="row mb-4">
     <div class="col-md-12">
+        <?php if (hasPermission('dashboard_server_control')): ?>
         <div class="card mb-3">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h5 class="mb-0"><i class="bi bi-hdd-network me-2"></i><span data-i18n="server_control"><?php echo t('server_control'); ?></span></h5>
@@ -17,6 +18,7 @@
                 </div>
             </div>
         </div>
+        <?php endif; ?>
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h5 class="mb-0"><?php echo t('dashboard'); ?></h5>
@@ -24,18 +26,77 @@
             </div>
             <div class="card-body">
                 <div class="row">
-                    <div class="col-md-4">
+                    <div class="col-md-4 mb-3">
                         <div class="card stat-card">
-                            <i class="bi bi-people display-4"></i>
-                            <div class="stat-number" id="playerCount">0</div>
-                            <div class="stat-label"><?php echo t('player_count'); ?></div>
+                            <div class="widget-top">
+                                <div class="stat-label"><i class="bi bi-chat-dots me-2"></i><?php echo t('live_chat'); ?></div>
+                            </div>
+                            <div class="widget-middle p-0" style="height: 200px;">
+                                <div id="dashboardLiveChatMessages" class="w-100 h-100 mb-0" style="overflow-y: scroll; background: #23272b; color: #f8f9fa; border-radius: 0; padding: 0.5rem; max-height: 200px;">
+                                    <div class="text-center text-muted" id="dashboardLiveChatPlaceholder"><?php echo t('loading_chat'); ?>...</div>
+                                </div>
+                            </div>
+                            <div class="widget-bottom p-2 d-flex justify-content-between align-items-center">
+                                <div class="form-check form-switch ms-1" style="font-size: 0.8rem;">
+                                    <input class="form-check-input" type="checkbox" id="dashboardLiveChatAutoScroll" checked>
+                                    <label class="form-check-label" for="dashboardLiveChatAutoScroll" style="user-select:none;cursor:pointer;">Auto-Scroll</label>
+                                </div>
+                                <a href="?page=chat" class="btn btn-sm btn-outline-primary"><i class="bi bi-box-arrow-up-right"></i> <?php echo t('open_full_chat'); ?></a>
+                            </div>
                         </div>
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-md-4 mb-3">
                         <div class="card stat-card">
-                            <i class="bi bi-shield-lock display-4"></i>
-                            <div class="stat-number" id="banCount">0</div>
-                            <div class="stat-label"><?php echo t('active_bans'); ?></div>
+                            <div class="widget-top">
+                                <div class="stat-label"><i class="bi bi-people me-2"></i><?php echo t('player_statistics'); ?></div>
+                            </div>
+                            <div class="widget-middle">
+                                <div class="d-flex justify-content-around align-items-center w-100">
+                                    <div class="text-center">
+                                        <i class="bi bi-people display-4 mb-2"></i>
+                                        <div class="stat-label mb-1"><?php echo t('player_count'); ?></div>
+                                        <div class="stat-number" id="playerCount">0</div>
+                                    </div>
+                                    <div class="text-center">
+                                        <i class="bi bi-shield-lock display-4 mb-2"></i>
+                                        <div class="stat-label mb-1"><?php echo t('active_bans'); ?></div>
+                                        <div class="stat-number" id="banCount">0</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <div class="card stat-card" id="serverResourcesWidget">
+                            <div class="widget-top">
+                                <div class="stat-label"><i class="bi bi-hdd-network me-2"></i><?php echo t('server_resources'); ?></div>
+                            </div>
+                            <div class="widget-middle">
+                                <i class="bi bi-hdd-network display-4 mb-3"></i>
+                                <div class="resource-bar">
+                                    <span class="resource-label"><?php echo t('cpu_usage'); ?></span>
+                                    <span class="resource-value" id="cpuUsageText">0%</span>
+                                    <div class="progress">
+                                        <div class="progress-bar bg-info" role="progressbar" id="cpuUsageBar" style="width: 0%;"></div>
+                                    </div>
+                                </div>
+                                <div class="resource-bar">
+                                    <span class="resource-label"><?php echo t('memory_usage'); ?></span>
+                                    <span class="resource-value" id="memoryUsageText">0%</span>
+                                    <div class="progress">
+                                        <div class="progress-bar bg-success" role="progressbar" id="memoryUsageBar" style="width: 0%;"></div>
+                                    </div>
+                                    <span class="resource-details" id="memoryDetails">0 GB / 0 GB</span>
+                                </div>
+                                <div class="resource-bar">
+                                    <span class="resource-label"><?php echo t('disk_usage'); ?></span>
+                                    <span class="resource-value" id="diskUsageText">0%</span>
+                                    <div class="progress">
+                                        <div class="progress-bar bg-warning" role="progressbar" id="diskUsageBar" style="width: 0%;"></div>
+                                    </div>
+                                    <span class="resource-details" id="diskDetails">0 GB / 0 GB</span>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -46,7 +107,8 @@
 
 <div class="row">
     <!-- Aktive Spieler -->
-    <div class="col-md-7">
+    <?php if (hasPermission('player_list')): ?>
+    <div class="col-md-6">
         <div class="card">
             <div class="card-header">
                 <h5 class="mb-0"><?php echo t('active_players'); ?></h5>
@@ -56,14 +118,18 @@
                     <table class="table table-striped table-hover" id="activePlayersTable">
                         <thead>
                             <tr>
+                                <th width="40"></th>
                                 <th><?php echo t('name'); ?></th>
+                                <th>Steam <?php echo t('name'); ?></th>
                                 <th>Steam ID</th>
+                                <?php if (hasPermission('player_kick') || hasPermission('player_ban')): ?>
                                 <th class="text-end"><?php echo t('actions'); ?></th>
+                                <?php endif; ?>
                             </tr>
                         </thead>
                         <tbody>
                             <tr>
-                                <td colspan="3" class="text-center"><?php echo t('loading'); ?></td>
+                                <td colspan="5" class="text-center"><?php echo t('loading'); ?></td>
                             </tr>
                         </tbody>
                     </table>
@@ -71,9 +137,11 @@
             </div>
         </div>
     </div>
+    <?php endif; ?>
     
     <!-- Kürzlich abgemeldete Spieler -->
-    <div class="col-md-5">
+    <?php if (hasPermission('player_history')): ?>
+    <div class="col-md-6">
         <div class="card">
             <div class="card-header">
                 <h5 class="mb-0"><?php echo t('recent_players'); ?></h5>
@@ -83,15 +151,19 @@
                     <table class="table table-striped table-hover" id="recentPlayersTable">
                         <thead>
                             <tr>
+                                <th width="40"></th>
                                 <th><?php echo t('name'); ?></th>
+                                <th>Steam <?php echo t('name'); ?></th>
                                 <th>Steam ID</th>
                                 <th><?php echo t('last_seen'); ?></th>
+                                <?php if (hasPermission('player_ban')): ?>
                                 <th class="text-end"><?php echo t('actions'); ?></th>
+                                <?php endif; ?>
                             </tr>
                         </thead>
                         <tbody>
                             <tr>
-                                <td colspan="4" class="text-center"><?php echo t('loading'); ?></td>
+                                <td colspan="6" class="text-center"><?php echo t('loading'); ?></td>
                             </tr>
                         </tbody>
                     </table>
@@ -99,6 +171,7 @@
             </div>
         </div>
     </div>
+    <?php endif; ?>
 
 <!-- Server-Stop/Restart Bestätigungsmodal -->
 <?php include __DIR__ . '/partials/server_confirm_modal.html'; ?>
@@ -179,4 +252,9 @@
         server_restart_confirm: '<?php echo t('server_restart_confirm'); ?>',
         yes_execute: '<?php echo t('yes_execute'); ?>'
     };
+    
+    // Berechtigungen für JavaScript
+    const HAS_KICK_PERMISSION = <?php echo hasPermission('player_kick') ? 'true' : 'false'; ?>;
+    const HAS_BAN_PERMISSION = <?php echo hasPermission('player_ban') ? 'true' : 'false'; ?>;
 </script>
+<?php /* Ende der Datei */ ?>

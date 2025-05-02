@@ -1,0 +1,56 @@
+/**
+ * Styling für sortierbare Tabellen
+ */
+
+/* Sortierbare Spalten mit Cursor markieren */
+th.sortable {
+    cursor: pointer;
+    position: relative;
+    padding-right: 25px;
+}
+
+/* Sortierungssymbole */
+th.sortable:after,
+th.sortable:before {
+    content: '';
+    position: absolute;
+    right: 10px;
+    width: 0;
+    height: 0;
+    opacity: 0.3;
+}
+
+/* Pfeil nach oben */
+th.sortable:before {
+    border-left: 5px solid transparent;
+    border-right: 5px solid transparent;
+    border-bottom: 5px solid #fff;
+    top: calc(50% - 8px);
+}
+
+/* Pfeil nach unten */
+th.sortable:after {
+    border-left: 5px solid transparent;
+    border-right: 5px solid transparent;
+    border-top: 5px solid #fff;
+    top: calc(50% + 2px);
+}
+
+/* Aktiver Sortierungspfeil (aufsteigend) */
+th.sortable.sorted-asc:before {
+    opacity: 1;
+}
+
+/* Aktiver Sortierungspfeil (absteigend) */
+th.sortable.sorted-desc:after {
+    opacity: 1;
+}
+
+/* Zusätzliche Styles für helle Themes */
+body[data-theme="light"] th.sortable:before {
+    border-bottom-color: #000;
+}
+
+body[data-theme="light"] th.sortable:after {
+    border-top-color: #000;
+}

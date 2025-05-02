@@ -14,10 +14,49 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $password = $_POST['password'];
         
         // Prüfen ob die Anmeldedaten korrekt sind
-        if ($username === $config['admin']['username'] && verifyPassword($password, $config['admin']['password'])) {
+        $loginValid = false;
+        $isMasterAdmin = false;
+        
+        // Alte Konfigurationsstruktur (Abwärtskompatibilität)
+        if (isset($config['admin']) && isset($config['admin']['username']) && isset($config['admin']['password'])) {
+            if ($username === $config['admin']['username'] && verifyPassword($password, $config['admin']['password'])) {
+                $loginValid = true;
+                $isMasterAdmin = true;
+            }
+        }
+        // Neue Konfigurationsstruktur
+        elseif (isset($config['master_admin']) && isset($config['master_admin']['username']) && isset($config['master_admin']['password'])) {
+            // Prüfen, ob es sich um den Master-Admin handelt
+            if ($username === $config['master_admin']['username'] && verifyPassword($password, $config['master_admin']['password'])) {
+                $loginValid = true;
+                $isMasterAdmin = true;
+            }
+            // Oder ob es sich um einen normalen Admin handelt
+            elseif (isset($config['admins']) && isset($config['admins'][$username])) {
+                $adminData = $config['admins'][$username];
+                if (verifyPassword($password, $adminData['password']) && $adminData['active'] === true) {
+                    $loginValid = true;
+                }
+            }
+        }
+        
+        if ($loginValid) {
             // Anmeldung in der Session speichern
             $_SESSION['logged_in'] = true;
             $_SESSION['username'] = $username;
+            $_SESSION['is_master_admin'] = $isMasterAdmin;
+            
+            // Rolle setzen
+            if ($isMasterAdmin) {
+                $_SESSION['admin_role'] = 'master';
+            } else {
+                // Bei alter Konfigurationsstruktur gibt es keine Rollen
+                if (isset($config['admins']) && isset($config['admins'][$username]['role'])) {
+                    $_SESSION['admin_role'] = $config['admins'][$username]['role'];
+                } else {
+                    $_SESSION['admin_role'] = 'admin'; // Standardrolle
+                }
+            }
             
             // Erfolgsmeldung
             $successMessage = t('login_successful');

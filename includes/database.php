@@ -8,6 +8,15 @@ class Database {
     private $config;
     
     /**
+     * Gibt die PDO-Datenbankverbindung zurück
+     * 
+     * @return PDO Datenbank-Verbindungsobjekt
+     */
+    public function getConnection() {
+        return $this->db;
+    }
+    
+    /**
      * Konstruktor
      * 
      * @param array $config Datenbank-Konfiguration

@@ -34,25 +34,95 @@ body {
 /* Dashboard */
 .stat-card {
     text-align: center;
-    padding: 1.5rem;
+    padding: 1rem;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    width: 100%;
 }
 
-.stat-number {
-    font-size: 3rem;
-    font-weight: 700;
-    line-height: 1;
-    margin: 0.5rem 0;
+/* Widget Struktur */
+.widget-top {
+    margin-bottom: 0.5rem;
+    padding-bottom: 0.25rem;
+    border-bottom: 1px solid rgba(0,0,0,0.1);
+}
+
+.widget-middle {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    width: 100%;
+    padding: 0.5rem 0;
 }
 
 .stat-label {
     font-size: 1rem;
-    opacity: 0.8;
+    font-weight: 600;
+    color: #495057;
 }
+
+.stat-number {
+    font-size: 3.5rem;
+    font-weight: 700;
+    line-height: 1;
+    margin: 0.5rem 0 1rem 0;
+    text-align: center;
+}
+
+
+
+.stat-card .resource-bar { margin: .5rem 0; }
+.stat-card .resource-label { font-size: .9rem; display: inline-block; }
+.stat-card .resource-value { font-size: .9rem; float: right; }
+.stat-card .progress { height: .5rem; margin-bottom: 0.3rem; }
+.stat-card .resource-details { font-size: 0.8rem; color: #6c757d; display: block; text-align: right; }
 
 /* Tabellen */
 .table-responsive {
     overflow-x: auto;
     border-radius: 4px;
+}
+
+/* Spieler-Tabellen */
+#recentPlayersTable th[width="40"],
+#activePlayersTable th[width="40"] {
+    width: 40px;
+    min-width: 40px;
+    max-width: 40px;
+}
+
+#recentPlayersTable th:nth-child(3),
+#activePlayersTable th:nth-child(3) {
+    width: 120px;
+    min-width: 120px;
+    max-width: 150px;
+}
+
+#recentPlayersTable th:nth-child(4),
+#activePlayersTable th:nth-child(4) {
+    width: 120px;
+    min-width: 100px;
+    max-width: 140px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+#recentPlayersTable td:nth-child(4),
+#activePlayersTable td:nth-child(4) {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 140px;
+}
+
+.player-avatar {
+    width: 32px;
+    height: 32px;
+    object-fit: cover;
 }
 
 .table th {

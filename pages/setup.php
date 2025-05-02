@@ -79,11 +79,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'password' => '',
             ];
         }
-        if (!isset($config['admin'])) {
-            $config['admin'] = [
+        // Neue Admin-Struktur mit Master-Admin und admins-Array
+        if (!isset($config['master_admin'])) {
+            $config['master_admin'] = [
                 'username' => '',
                 'password' => '',
             ];
+        }
+        if (!isset($config['admins'])) {
+            $config['admins'] = [];
         }
         if (!isset($config['chat_server'])) {
             $config['chat_server'] = [
@@ -168,12 +172,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
 
     } elseif (isset($_POST['step3_submit'])) {
-        // Schritt 3: Admin-Zugangsdaten
+        // Schritt 3: Master-Admin-Zugangsdaten
         $username = trim($_POST['admin_username']);
         $password = $_POST['admin_password'];
         if ($username !== '' && $password !== '') {
-            $config['admin']['username'] = $username;
-            $config['admin']['password'] = hashPassword($password);
+            // Master-Admin-Einstellungen festlegen
+            $config['master_admin']['username'] = $username;
+            $config['master_admin']['password'] = hashPassword($password);
+            
+            // Auch als ersten Admin in die admins-Liste eintragen
+            $config['admins'][$username] = [
+                'password' => hashPassword($password),
+                'role' => 'master',
+                'active' => true
+            ];
             
             // Vorherige Config zusammenführen
             if (isset($_SESSION['setup_config'])) {
@@ -215,9 +227,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // Jetzt die finale Config schreiben
         if (saveConfig($config)) {
             unset($_SESSION['setup_config']);
-            // Automatisch anmelden
+            // Automatisch anmelden mit Master-Admin-Rechten
             $_SESSION['logged_in'] = true;
-            $_SESSION['username'] = $config['admin']['username'];
+            $_SESSION['username'] = $config['master_admin']['username'];
+            $_SESSION['is_master_admin'] = true;
+            $_SESSION['admin_role'] = 'master';
             session_write_close();
             if (function_exists('opcache_invalidate')) {
                 @opcache_invalidate(MTWI_ROOT . '/config/config.php', true);

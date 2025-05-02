@@ -1,0 +1,71 @@
+/**
+ * Motor Town Web Interface (MTWI) - Spielerübersicht Styles
+ */
+
+/* Anklickbare Zeilen für die Spielertabellen */
+.clickable-row {
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.clickable-row:hover {
+    background-color: rgba(0, 123, 255, 0.1) !important;
+}
+
+/* Steam-Profil-Link Styling */
+.steam-profile-link {
+    color: #1b2838;
+    text-decoration: none;
+    padding: 2px 5px;
+    border-radius: 3px;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+}
+
+.steam-profile-link:hover {
+    background-color: #1b2838;
+    color: #ffffff;
+    text-decoration: none;
+}
+
+/* Dark-Mode Anpassung für Steam-Links */
+body.dark-mode .steam-profile-link,
+.dark-mode .steam-profile-link {
+    color: #66c0f4;
+}
+
+body.dark-mode .steam-profile-link:hover,
+.dark-mode .steam-profile-link:hover {
+    background-color: #66c0f4;
+    color: #1b2838;
+}
+
+/* Tooltip für anklickbare Zeilen */
+.clickable-row::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    top: -30px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: #333;
+    color: #fff;
+    padding: 5px 10px;
+    border-radius: 4px;
+    font-size: 12px;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+    white-space: nowrap;
+}
+
+.clickable-row:hover::after {
+    opacity: 1;
+}
+
+/* Responsive Anpassungen für Tabellen */
+@media (max-width: 768px) {
+    .table-responsive {
+        overflow-x: auto;
+    }
+}

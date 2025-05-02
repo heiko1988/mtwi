@@ -20,7 +20,9 @@ $(function() {
                     const data = JSON.parse(response);
                     if (data.success && Array.isArray(data.data)) {
                         let html = '';
-                        data.data.forEach(msg => {
+                        // Array umdrehen, damit älteste Nachrichten oben und neueste unten angezeigt werden
+                        const messages = [...data.data].reverse();
+                        messages.forEach(msg => {
                             if (msg.author && msg.author.toLowerCase() === 'admin') {
                                 const zeit = msg.timestamp ? `<span style="color:#aaa;">[${msg.timestamp}]</span> ` : '';
                                 html += `<div style="margin-bottom:2px; background: #ffe066; color: #222; font-weight: bold; border-radius: 0.25em; padding: 2px 8px; display:inline-block;">${zeit}<span class='fw-bold'>admin</span>: ${msg.text}</div>`;
@@ -124,7 +126,9 @@ $(function() {
                     const data = JSON.parse(response);
                     if (data.success && Array.isArray(data.data)) {
                         let html = '';
-                        data.data.forEach(msg => {
+                        // Array umdrehen, damit älteste Nachrichten oben und neueste unten angezeigt werden
+                        const messages = [...data.data].reverse();
+                        messages.forEach(msg => {
                             if (msg.author && msg.author.toLowerCase() === 'admin') {
                                 const zeit = msg.timestamp ? `<span style=\"color:#fff;font-size:0.95em;margin-right:4px;\">[${msg.timestamp}]</span> ` : '';
                                 html += `<div style=\"margin-bottom:2px;display:block;\">${zeit}<span class='fw-bold' style=\"background:#ffe066;color:#222;border-radius:0.25em;padding:2px 8px;\">admin</span>: ${msg.text}</div>`;

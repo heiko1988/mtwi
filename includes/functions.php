@@ -134,9 +134,27 @@ function saveConfig($newConfig) {
             'Bitte geben Sie dem Webserver-Benutzer Schreibrechte auf dieses Verzeichnis.';
         return false;
     }
+    
+    // KRITISCH: Sicherstellen, dass setup_completed=true erhalten bleibt
+    // Wenn setup_completed bereits in der Konfiguration existiert und true ist,
+    // sollte es immer auf true bleiben
+    if (isset($newConfig['settings']) && is_array($newConfig['settings'])) {
+        // Wenn eine vorhandene Konfigurationsdatei existiert, setup_completed auslesen
+        if (file_exists($configFile)) {
+            $oldConfig = [];
+            include($configFile);
+            if (isset($config) && is_array($config) && 
+                isset($config['settings']['setup_completed']) && 
+                $config['settings']['setup_completed'] === true) {
+                // setup_completed=true von der alten Konfiguration übernehmen
+                $newConfig['settings']['setup_completed'] = true;
+            }
+        }
+    }
 
     $content = "<?php\n/**\n * Motor Town Web Interface (MTWI) - Konfigurationsdatei\n */\n\n";
     $content .= '$config = ' . var_export($newConfig, true) . ";\n";
+    $content .= "\nreturn \$config;\n";
     
     // Fehler beim Schreiben abfangen
     if (file_put_contents($configFile, $content) === false) {
@@ -194,4 +212,82 @@ function generateCsrfToken() {
  */
 function verifyCsrfToken($token) {
     return isset($_SESSION['csrf_token']) && hash_equals($_SESSION['csrf_token'], $token);
+}
+
+/**
+ * Zeigt eine Fehlermeldung an
+ * 
+ * @param string $title    Titel der Fehlermeldung
+ * @param string $message  Detaillierte Fehlermeldung
+ */
+function displayError($title, $message) {
+    echo '<div class="container mt-5">';
+    echo '<div class="alert alert-danger">';
+    echo '<h4 class="alert-heading">' . htmlspecialchars($title) . '</h4>';
+    echo '<p>' . htmlspecialchars($message) . '</p>';
+    echo '<hr>';
+    echo '<p class="mb-0">' . t('redirecting_in_seconds', ['seconds' => '5']) . '</p>';
+    echo '</div>';
+    echo '</div>';
+    echo '<script>setTimeout(function() { window.location.href = "index.php?page=dashboard"; }, 5000);</script>';
+}
+
+/**
+ * Gibt die vollständige URL zum Chat-Server zurück
+ * 
+ * @return string URL zum Chat-Server mit Port
+ */
+function getChatServerUrl() {
+    global $config;
+    
+    if (!isset($config['chat_server']) || !isset($config['chat_server']['url']) || !isset($config['chat_server']['port'])) {
+        return '';
+    }
+    
+    return $config['chat_server']['url'] . ':' . $config['chat_server']['port'];
+}
+
+/**
+ * Erstellt einen Auth-Kontext für Verbindungen zum Chat-Server
+ * 
+ * @return resource Stream-Kontext mit Auth-Header
+ */
+function createAuthContext() {
+    global $config;
+    
+    if (!isset($config['chat_server']) || !isset($config['chat_server']['username']) || !isset($config['chat_server']['password'])) {
+        logApiMessage('Keine Chat-Server Anmeldedaten konfiguriert');
+        return stream_context_create([]);
+    }
+    
+    $username = $config['chat_server']['username'];
+    $password = $config['chat_server']['password'];
+    
+    // Debug-Log
+    logApiMessage('Verwende Auth: ' . $username . ':' . str_repeat('*', strlen($password)));
+    
+    // Verschiedene Formate für den Auth-Header testen
+    $authString = $username . ':' . $password;
+    $base64Auth = base64_encode($authString);
+    
+    return stream_context_create([
+        'http' => [
+            'method' => 'GET',
+            'header' => "Authorization: Basic $base64Auth\r\n",
+            'timeout' => 5, // 5 Sekunden Timeout
+            'ignore_errors' => true // Wichtig, um Fehlerdetails zu erhalten
+        ]
+    ]);
+}
+
+/**
+ * Protokolliert einen API-Aufruf
+ * 
+ * @param string $message Nachricht für das Log
+ */
+function logApiMessage($message) {
+    $logFile = MTWI_ROOT . '/data/players_api.log';
+    $date = date('Y-m-d H:i:s');
+    $logMessage = "[$date] $message\n";
+    file_put_contents($logFile, $logMessage, FILE_APPEND);
 }

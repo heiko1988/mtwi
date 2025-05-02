@@ -10,9 +10,10 @@ body[data-theme="dark"] {
     --card-header-bg: #343a40;
     --input-bg: #343a40;
     --input-border: #495057;
-    --table-border: #495057;
-    --table-stripe: #2b3035;
-    --table-hover: #343a40;
+    --table-border: #5a6268;
+    --table-bg: #3a4148;
+    --table-stripe: #4a5056;
+    --table-hover: #5a6268;
     --nav-bg: #0d6efd;
     --nav-color: #ffffff;
     --dropdown-bg: #343a40;
@@ -62,13 +63,14 @@ body[data-theme="dark"] #chatMessage::placeholder {
 body[data-theme="dark"] .table {
     color: var(--text-color);
     border-color: var(--table-border);
-    background-color: var(--card-bg);
+    background-color: var(--table-bg);
 }
 
 body[data-theme="dark"] .table th {
-    background-color: var(--card-header-bg);
+    background-color: #4b545c;
     color: var(--text-color);
     border-color: var(--table-border);
+    font-weight: 600;
 }
 
 body[data-theme="dark"] .table td {
@@ -78,6 +80,11 @@ body[data-theme="dark"] .table td {
 body[data-theme="dark"] .table-striped>tbody>tr:nth-of-type(odd)>* {
     background-color: var(--table-stripe);
     --bs-table-striped-bg: var(--table-stripe);
+    color: var(--text-color);
+}
+
+body[data-theme="dark"] .table-striped>tbody>tr:nth-of-type(even)>* {
+    background-color: var(--table-bg);
     color: var(--text-color);
 }
 
@@ -151,7 +158,12 @@ body[data-theme="dark"] .text-muted,
 body[data-theme="dark"] .small,
 body[data-theme="dark"] small,
 body[data-theme="dark"] .text-secondary {
-    color: #adb5bd !important;
+    color: #c8cfd6 !important;
+}
+
+/* Bessere Lesbarkeit für Tabelleninhalte */
+body[data-theme="dark"] .table td {
+    color: #e9ecef;
 }
 
 /* Verbesserte Schnellnachrichten-Buttons */

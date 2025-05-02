@@ -18,19 +18,20 @@ function sendResponse($success, $message, $data = null) {
     exit;
 }
 
-// CSRF-Token überprüfen
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    if (!isset($_POST['csrf_token']) || !verifyCsrfToken($_POST['csrf_token'])) {
-        sendResponse(false, 'Ungültiges oder fehlendes CSRF-Token');
-    }
-}
-
 // Prüfen, ob eine Aktion angegeben wurde
 if (!isset($_POST['action'])) {
     sendResponse(false, 'Keine Aktion angegeben');
 }
 
 $action = $_POST['action'];
+
+// CSRF-Token überprüfen
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // Für Testzwecke: Deaktiviere CSRF-Check temporär, wenn action=get_admins
+    if ($action !== 'get_admins' && (!isset($_POST['csrf_token']) || !verifyCsrfToken($_POST['csrf_token']))) {
+        sendResponse(false, 'Ungültiges oder fehlendes CSRF-Token');
+    }
+}
 
 // Aktionen, die keine Anmeldung erfordern
 $publicActions = ['login', 'setup_step'];
@@ -110,9 +111,333 @@ switch ($action) {
 
     // LIVE CHAT: Nachricht senden
     case 'send_live_chat_message':
+        // Prüfen, ob der Benutzer die Berechtigung hat, Nachrichten zu senden
+        if (!hasPermission('chat_send')) {
+            sendResponse(false, 'Keine Berechtigung zum Senden von Chat-Nachrichten!');
+        }
+        
         // HIER: Endpunkt ggf. anpassen, falls /chatlog/send o.ä. existiert
         sendResponse(false, 'Nachricht senden ist noch nicht implementiert (API-Endpunkt fehlt)!');
         break;
+    // Zeitgesteuerte Nachricht hinzufügen
+    case 'add_scheduled_message':
+        // Prüfen, ob der Benutzer die Berechtigung hat
+        if (!hasPermission('chat_send')) {
+            sendResponse(false, 'Keine Berechtigung zum Hinzufügen zeitgesteuerter Nachrichten!');
+        }
+        
+        // Daten validieren
+        $message = isset($_POST['message']) ? trim($_POST['message']) : '';
+        $scheduleType = isset($_POST['schedule_type']) ? trim($_POST['schedule_type']) : '';
+        $scheduleData = isset($_POST['schedule_data']) ? trim($_POST['schedule_data']) : '{}';
+        $active = isset($_POST['active']) ? (int)$_POST['active'] : 1;
+        
+        if (empty($message) || empty($scheduleType)) {
+            sendResponse(false, 'Nachricht und Zeitplantyp müssen angegeben werden!');
+        }
+        
+        // Zeitgesteuerte Nachrichten-Verarbeitung initialisieren
+        require_once __DIR__ . '/includes/scheduled_messages.php';
+        $scheduledMessages = new ScheduledMessages($db);
+        
+        // Nachricht speichern
+        $result = $scheduledMessages->create($message, $scheduleType, $scheduleData, $active);
+        
+        if (!$result) {
+            sendResponse(false, 'Fehler beim Speichern der zeitgesteuerten Nachricht');
+        }
+        
+        // Aktualisierte Liste zurückgeben
+        $all = $scheduledMessages->getAll();
+        sendResponse(true, 'Zeitgesteuerte Nachricht erfolgreich hinzugefügt', ['scheduled_messages' => $all]);
+        break;
+        
+    // Zeitgesteuerte Nachricht aktualisieren
+    case 'update_scheduled_message':
+        // Prüfen, ob der Benutzer die Berechtigung hat
+        if (!hasPermission('chat_send')) {
+            sendResponse(false, 'Keine Berechtigung zum Bearbeiten zeitgesteuerter Nachrichten!');
+        }
+        
+        // Daten validieren
+        $id = isset($_POST['id']) ? (int)$_POST['id'] : 0;
+        $message = isset($_POST['message']) ? trim($_POST['message']) : '';
+        $scheduleType = isset($_POST['schedule_type']) ? trim($_POST['schedule_type']) : '';
+        $scheduleData = isset($_POST['schedule_data']) ? trim($_POST['schedule_data']) : '{}';
+        $active = isset($_POST['active']) ? (int)$_POST['active'] : 1;
+        
+        if ($id <= 0 || empty($message) || empty($scheduleType)) {
+            sendResponse(false, 'ID, Nachricht und Zeitplantyp müssen angegeben werden!');
+        }
+        
+        // Zeitgesteuerte Nachrichten-Verarbeitung initialisieren
+        require_once __DIR__ . '/includes/scheduled_messages.php';
+        $scheduledMessages = new ScheduledMessages($db);
+        
+        // Nachricht aktualisieren
+        $result = $scheduledMessages->update($id, $message, $scheduleType, $scheduleData, $active);
+        
+        if (!$result) {
+            sendResponse(false, 'Fehler beim Aktualisieren der zeitgesteuerten Nachricht');
+        }
+        
+        // Aktualisierte Nachricht zurückgeben
+        $updated = $scheduledMessages->getById($id);
+        sendResponse(true, 'Zeitgesteuerte Nachricht erfolgreich aktualisiert', $updated);
+        break;
+        
+    // Zeitgesteuerte Nachricht löschen
+    case 'delete_scheduled_message':
+        // Prüfen, ob der Benutzer die Berechtigung hat
+        if (!hasPermission('chat_send')) {
+            sendResponse(false, 'Keine Berechtigung zum Löschen zeitgesteuerter Nachrichten!');
+        }
+        
+        // Daten validieren
+        $id = isset($_POST['id']) ? (int)$_POST['id'] : 0;
+        
+        if ($id <= 0) {
+            sendResponse(false, 'ID muss angegeben werden!');
+        }
+        
+        // Zeitgesteuerte Nachrichten-Verarbeitung initialisieren
+        require_once __DIR__ . '/includes/scheduled_messages.php';
+        $scheduledMessages = new ScheduledMessages($db);
+        
+        // Nachricht löschen
+        $result = $scheduledMessages->delete($id);
+        
+        if (!$result) {
+            sendResponse(false, 'Fehler beim Löschen der zeitgesteuerten Nachricht');
+        }
+        
+        sendResponse(true, 'Zeitgesteuerte Nachricht erfolgreich gelöscht');
+        break;
+        
+    // Status einer zeitgesteuerten Nachricht umschalten (aktiv/inaktiv)
+    case 'toggle_scheduled_message':
+        // Prüfen, ob der Benutzer die Berechtigung hat
+        if (!hasPermission('chat_send')) {
+            sendResponse(false, 'Keine Berechtigung zum Ändern zeitgesteuerter Nachrichten!');
+        }
+        
+        // Daten validieren
+        $id = isset($_POST['id']) ? (int)$_POST['id'] : 0;
+        $active = isset($_POST['active']) ? (int)$_POST['active'] : 1;
+        
+        if ($id <= 0) {
+            sendResponse(false, 'ID muss angegeben werden!');
+        }
+        
+        // Zeitgesteuerte Nachrichten-Verarbeitung initialisieren
+        require_once __DIR__ . '/includes/scheduled_messages.php';
+        $scheduledMessages = new ScheduledMessages($db);
+        
+        // Status umschalten
+        $result = $scheduledMessages->toggleActive($id, $active);
+        
+        if (!$result) {
+            sendResponse(false, 'Fehler beim Ändern des Status der zeitgesteuerten Nachricht');
+        }
+        
+        sendResponse(true, 'Status der zeitgesteuerten Nachricht erfolgreich geändert');
+        break;
+        
+    // Alle zeitgesteuerten Nachrichten abrufen
+    case 'get_scheduled_messages':
+        // Prüfen, ob der Benutzer die Berechtigung hat
+        if (!hasPermission('chat_view')) {
+            sendResponse(false, 'Keine Berechtigung zum Anzeigen zeitgesteuerter Nachrichten!');
+        }
+        
+        // Zeitgesteuerte Nachrichten-Verarbeitung initialisieren
+        require_once __DIR__ . '/includes/scheduled_messages.php';
+        $scheduledMessages = new ScheduledMessages($db);
+        
+        // Alle Nachrichten abrufen
+        $messages = $scheduledMessages->getAll();
+        
+        sendResponse(true, 'Zeitgesteuerte Nachrichten erfolgreich abgerufen', ['scheduled_messages' => $messages]);
+        break;
+        
+    // Einzelne zeitgesteuerte Nachricht abrufen
+    case 'get_scheduled_message':
+        // Prüfen, ob der Benutzer die Berechtigung hat
+        if (!hasPermission('chat_send')) {
+            sendResponse(false, 'Keine Berechtigung zum Anzeigen zeitgesteuerter Nachrichten!');
+        }
+        
+        // ID validieren
+        $id = isset($_POST['id']) ? (int)$_POST['id'] : 0;
+        
+        if (empty($id)) {
+            sendResponse(false, 'Keine gültige ID angegeben');
+        }
+        
+        // Zeitgesteuerte Nachrichten-Verarbeitung initialisieren
+        require_once __DIR__ . '/includes/scheduled_messages.php';
+        $scheduledMessages = new ScheduledMessages($db);
+        
+        // Nachricht abrufen
+        $message = $scheduledMessages->getById($id);
+        
+        if (!$message) {
+            sendResponse(false, 'Zeitgesteuerte Nachricht nicht gefunden');
+        }
+        
+        sendResponse(true, 'Zeitgesteuerte Nachricht gefunden', ['message_data' => $message]);
+        break;
+        
+    // Aktiv-Status einer zeitgesteuerten Nachricht umschalten
+    case 'toggle_scheduled_message':
+        // Prüfen, ob der Benutzer die Berechtigung hat
+        if (!hasPermission('chat_send')) {
+            sendResponse(false, 'Keine Berechtigung zum Verwalten zeitgesteuerter Nachrichten!');
+        }
+        
+        // Daten validieren
+        $id = isset($_POST['id']) ? (int)$_POST['id'] : 0;
+        $active = isset($_POST['active']) ? (int)$_POST['active'] : 0;
+        
+        if (empty($id)) {
+            sendResponse(false, 'Keine gültige ID angegeben');
+        }
+        
+        // Zeitgesteuerte Nachrichten-Verarbeitung initialisieren
+        require_once __DIR__ . '/includes/scheduled_messages.php';
+        $scheduledMessages = new ScheduledMessages($db);
+        
+        // Status umschalten
+        $result = $scheduledMessages->toggleActive($id, $active);
+        
+        if (!$result) {
+            sendResponse(false, 'Fehler beim Ändern des Aktiv-Status');
+        }
+        
+        $statusText = $active ? 'aktiviert' : 'deaktiviert';
+        sendResponse(true, "Zeitgesteuerte Nachricht wurde $statusText");
+        break;
+        
+    // Zeitgesteuerte Nachricht löschen
+    case 'delete_scheduled_message':
+        // Prüfen, ob der Benutzer die Berechtigung hat
+        if (!hasPermission('chat_send')) {
+            sendResponse(false, 'Keine Berechtigung zum Löschen zeitgesteuerter Nachrichten!');
+        }
+        
+        // ID validieren
+        $id = isset($_POST['id']) ? (int)$_POST['id'] : 0;
+        
+        if (empty($id)) {
+            sendResponse(false, 'Keine gültige ID angegeben');
+        }
+        
+        // Zeitgesteuerte Nachrichten-Verarbeitung initialisieren
+        require_once __DIR__ . '/includes/scheduled_messages.php';
+        $scheduledMessages = new ScheduledMessages($db);
+        
+        // Nachricht löschen
+        $result = $scheduledMessages->delete($id);
+        
+        if (!$result) {
+            sendResponse(false, 'Fehler beim Löschen der zeitgesteuerten Nachricht');
+        }
+        
+        sendResponse(true, 'Zeitgesteuerte Nachricht erfolgreich gelöscht');
+        break;
+        
+    // Cron-Status prüfen
+    case 'check_cron_status':
+        // Prüfen, ob der Benutzer die Berechtigung hat
+        if (!hasPermission('chat_send')) {
+            sendResponse(false, 'Keine Berechtigung zum Prüfen des Cron-Status!');
+        }
+        
+        // Zeitgesteuerte Nachrichten-Verarbeitung initialisieren
+        require_once __DIR__ . '/includes/scheduled_messages.php';
+        $scheduledMessages = new ScheduledMessages($db);
+        
+        // Letzten Cron-Log-Eintrag abrufen
+        $lastLog = $scheduledMessages->getLastCronLog('send_scheduled_messages');
+        
+        if (!$lastLog) {
+            sendResponse(false, 'Keine Cron-Logs gefunden, möglicherweise wurde der Cron-Job noch nie ausgeführt');
+        }
+        
+        // Status prüfen
+        $status = 'unknown';
+        $message = '';
+        $lastRun = null;
+        $progressPercent = 0;
+        
+        if ($lastLog['status'] === 'running') {
+            // Prüfen, ob der Job möglicherweise hängt (älter als 10 Minuten)
+            $startTime = strtotime($lastLog['start_time']);
+            $timeDiff = time() - $startTime;
+            
+            if ($timeDiff > 600) { // 10 Minuten
+                $status = 'warning';
+                $message = 'Der Cron-Job scheint hängen geblieben zu sein. Letzter Start vor ' . floor($timeDiff / 60) . ' Minuten.';
+            } else {
+                $status = 'running';
+                $message = 'Der Cron-Job läuft derzeit. Gestartet vor ' . floor($timeDiff / 60) . ' Minuten.';
+                
+                // Fortschritt basierend auf der Zeit schätzen (Annahme: 5 Minuten Laufzeit)
+                $progressPercent = min(95, ($timeDiff / 300) * 100);
+            }
+        } else if ($lastLog['status'] === 'completed') {
+            $status = 'running';
+            $message = 'Der Cron-Job wurde erfolgreich ausgeführt.';
+            $lastRun = date('d.m.Y H:i:s', strtotime($lastLog['end_time']));
+            $progressPercent = 100;
+            
+            // Prüfen, ob der letzte Lauf zu lange her ist (> 15 Minuten)
+            $endTime = strtotime($lastLog['end_time']);
+            $timeDiff = time() - $endTime;
+            
+            if ($timeDiff > 900) { // 15 Minuten
+                $status = 'warning';
+                $message = 'Der Cron-Job wurde zuletzt vor ' . floor($timeDiff / 60) . ' Minuten ausgeführt.';
+            }
+        } else if ($lastLog['status'] === 'error') {
+            $status = 'stopped';
+            $message = 'Der Cron-Job ist mit einem Fehler fehlgeschlagen: ' . $lastLog['message'];
+            $lastRun = date('d.m.Y H:i:s', strtotime($lastLog['end_time']));
+        }
+        
+        sendResponse(true, $message, [
+            'cron_status' => $status,
+            'last_run' => $lastRun,
+            'progress_percent' => $progressPercent
+        ]);
+        break;
+        
+    // API-Einstellungen speichern
+    case 'save_api_settings':
+        // Prüfen, ob der Benutzer die Berechtigung hat, Einstellungen zu ändern
+        if (!hasPermission('settings_edit')) {
+            sendResponse(false, 'Keine Berechtigung zum Ändern der API-Einstellungen!');
+        }
+        
+        // Daten validieren
+        $url = isset($_POST['api_url']) ? trim($_POST['api_url']) : '';
+        $password = isset($_POST['api_password']) ? trim($_POST['api_password']) : '';
+        
+        if (empty($url) || empty($password)) {
+            sendResponse(false, 'URL und Passwort müssen ausgefüllt werden!');
+        }
+        
+        // In Konfiguration speichern
+        $config['api'] = [
+            'url' => $url,
+            'password' => $password
+        ];
+        if (!saveConfig($config)) {
+            sendResponse(false, 'Fehler beim Speichern der Konfiguration');
+        }
+        sendResponse(true, 'API-Einstellungen erfolgreich gespeichert');
+        break;
+        
     // Chat-Server Einstellungen speichern
     case 'save_chat_server_settings':
         $username = isset($_POST['chat_server_username']) ? trim($_POST['chat_server_username']) : '';
@@ -134,32 +459,229 @@ switch ($action) {
         sendResponse(true, 'Chat-Server Einstellungen gespeichert');
         break;
 
+    // API-Verbindung testen - Verbesserte Version mit ApiClient
+    case 'test_api_connection':
+        error_log('API-Verbindungstest gestartet mit POST-Daten: ' . print_r($_POST, true));
+        
+        $url = isset($_POST['url']) ? trim($_POST['url']) : '';
+        $password = isset($_POST['password']) ? trim($_POST['password']) : '';
+        
+        if (empty($url) || empty($password)) {
+            error_log('API-Test: Fehlende Parameter');
+            sendResponse(false, 'Bitte füllen Sie alle Felder aus');
+        }
+        
+        if (!filter_var($url, FILTER_VALIDATE_URL)) {
+            error_log('API-Test: Ungültige URL');
+            sendResponse(false, 'Die angegebene URL ist ungültig');
+        }
+        
+        error_log('API-Test: Teste Verbindung zu ' . $url . ' mit ApiClient-Klasse');
+        
+        // ApiClient-Klasse einbinden (mit Fehlerprüfung)
+        $api_client_path = __DIR__ . '/includes/api_client.php';
+        if (!file_exists($api_client_path)) {
+            error_log('API-Test Fehler: ApiClient-Datei nicht gefunden: ' . $api_client_path);
+            sendResponse(false, 'Interner Fehler: ApiClient nicht gefunden');
+            break;
+        }
+        
+        require_once $api_client_path;
+        
+        // Direkte cURL-Implementierung mit korrektem API-Endpunkt-Format
+        // Basierend auf der ApiClient-Klasse: player/count ist der korrekte Endpunkt!
+        error_log('API-Test: Verwende direkte cURL Implementierung mit korrektem Endpunkt');
+        
+        $ch = curl_init();
+        // ACHTUNG: Die Motor Town API erwartet den Endpunkt als "player/count" und das Passwort als GET-Parameter
+        $testUrl = rtrim($url, '/') . '/player/count/?password=' . urlencode($password);
+        
+        // cURL-Optionen setzen
+        curl_setopt($ch, CURLOPT_URL, $testUrl);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 10); // 10 Sekunden Timeout
+        curl_setopt($ch, CURLOPT_FAILONERROR, false);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
+        
+        // KEINE speziellen Header für die Motor Town API nötig,
+        // da das Passwort bereits als GET-Parameter gesendet wird
+        curl_setopt($ch, CURLOPT_HTTPHEADER, ['Accept: application/json']);
+        
+        // cURL ausführen
+        $response = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $errorMsg = curl_error($ch);
+        $errorNumber = curl_errno($ch);
+        curl_close($ch);
+        
+        // Ergebnis protokollieren
+        error_log('API-Test cURL Response: ' . $response);
+        error_log('API-Test HTTP Code: ' . $httpCode);
+        if ($errorMsg) {
+            error_log('API-Test cURL Error: [' . $errorNumber . '] ' . $errorMsg);
+        }
+        
+        // Antwort analysieren
+        if ($errorNumber > 0) {
+            // cURL-Fehler (z.B. Server nicht erreichbar)
+            error_log('API-Test: Verbindung fehlgeschlagen. Grund: ' . $errorMsg);
+            sendResponse(false, 'Verbindung fehlgeschlagen: Server nicht gefunden');
+        } else if ($httpCode == 401) {
+            // Unauthorized (falsches Passwort)
+            error_log('API-Test: Verbindung fehlgeschlagen. Grund: Unauthorized (401)');
+            sendResponse(false, 'Verbindung fehlgeschlagen: Falsches Passwort');
+        } else if ($httpCode == 200) {
+            // Erfolgreiche Antwort
+            $data = @json_decode($response, true);
+            if ($data === null) {
+                error_log('API-Test: Ungültige JSON-Antwort: ' . $response);
+                sendResponse(false, 'Verbindung fehlgeschlagen: Ungültige Antwort vom Server');
+            } else {
+                // Prüfen, ob das erwartete Format vorliegt (succeeded und data)
+                if (isset($data['succeeded']) && $data['succeeded']) {
+                    error_log('API-Test: Verbindung erfolgreich. Daten: ' . print_r($data, true));
+                    sendResponse(true, 'Verbindung erfolgreich!', $data);
+                } else {
+                    // API-Fehler verarbeiten
+                    $errorMsg = isset($data['message']) ? $data['message'] : 'Unbekannter API-Fehler';
+                    error_log('API-Test: API-Fehler: ' . $errorMsg);
+                    sendResponse(false, 'Verbindung fehlgeschlagen: ' . $errorMsg);
+                }
+            }
+        } else {
+            // Sonstiger HTTP-Fehler
+            error_log('API-Test: HTTP-Fehler: ' . $httpCode);
+            sendResponse(false, 'Verbindung fehlgeschlagen: HTTP-Fehler ' . $httpCode);            
+        }
+        break;
+        
     // Chat-Server Verbindung testen
     case 'test_chat_server_connection':
-        $username = isset($_POST['chat_server_username']) ? trim($_POST['chat_server_username']) : '';
-        $url = isset($_POST['chat_server_url']) ? trim($_POST['chat_server_url']) : '';
-        $port = isset($_POST['chat_server_port']) ? trim($_POST['chat_server_port']) : '';
-        $password = isset($_POST['chat_server_password']) ? trim($_POST['chat_server_password']) : '';
-        if (empty($username) || empty($url) || empty($port) || empty($password)) {
-            sendResponse(false, 'Alle Felder müssen ausgefüllt werden!');
+        // Logging für Debug-Zwecke
+        error_log('Chat-Server Test: ' . print_r($_POST, true));
+        
+        // Verschiedene mögliche Parameter-Namen akzeptieren
+        $username = '';
+        if (isset($_POST['username'])) {
+            $username = trim($_POST['username']);
+        } elseif (isset($_POST['chat_server_username'])) {
+            $username = trim($_POST['chat_server_username']);
         }
-        $apiUrl = rtrim($url, '/') . ':' . $port . '/chatlog?lastfile=1';
+        
+        $url = '';
+        if (isset($_POST['url'])) {
+            $url = trim($_POST['url']);
+        } elseif (isset($_POST['chat_server_url'])) {
+            $url = trim($_POST['chat_server_url']);
+        }
+        
+        $port = '';
+        if (isset($_POST['port'])) {
+            $port = trim($_POST['port']);
+        } elseif (isset($_POST['chat_server_port'])) {
+            $port = trim($_POST['chat_server_port']);
+        }
+        
+        $password = '';
+        if (isset($_POST['password'])) {
+            $password = trim($_POST['password']);
+        } elseif (isset($_POST['chat_server_password'])) {
+            $password = trim($_POST['chat_server_password']);
+        }
+        
+        error_log("Parsed params: username=$username, url=$url, port=$port, password=***");
+        
+        if (empty($username) || empty($url) || empty($password)) {
+            sendResponse(false, 'Chat-Server: Benutzername, URL und Passwort werden benötigt');
+        }
+        
+        // Port hat einen Standardwert, falls nicht angegeben
+        if (empty($port)) {
+            $port = '5005'; // Standardwert
+        }
+        // Der Chat-Server bietet den Endpoint '/chatlog' ohne Parameter an
+        $apiUrl = rtrim($url, '/') . ':' . $port . '/chatlog';
         $opts = [
             'http' => [
                 'method' => 'GET',
                 'header' => 'Authorization: Basic ' . base64_encode($username . ':' . $password)
             ]
         ];
-        $context = stream_context_create($opts);
-        $result = @file_get_contents($apiUrl, false, $context);
-        if ($result === FALSE) {
-            sendResponse(false, 'Verbindung zum Chat-Server fehlgeschlagen!');
+        // Verbesserte Implementierung mit cURL statt file_get_contents
+        error_log('Chat-Server-Test: Verbinde mit URL ' . $apiUrl);
+        
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $apiUrl);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 10); // 10 Sekunden Timeout
+        curl_setopt($ch, CURLOPT_FAILONERROR, false);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
+        
+        // Basic Auth-Header setzen
+        curl_setopt($ch, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
+        curl_setopt($ch, CURLOPT_USERPWD, $username . ':' . $password);
+        
+        // cURL ausführen
+        $response = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $errorMsg = curl_error($ch);
+        $errorNumber = curl_errno($ch);
+        curl_close($ch);
+        
+        // Detaillierte Protokollierung für die Fehleranalyse
+        error_log('Chat-Server-Test: HTTP Code: ' . $httpCode);
+        error_log('Chat-Server-Test: Antwort: ' . substr($response, 0, 500)); // Begrenzen auf 500 Zeichen
+        if ($errorMsg) {
+            error_log('Chat-Server-Test: cURL-Fehler: [' . $errorNumber . '] ' . $errorMsg);
         }
-        $data = json_decode($result, true);
-        if (!$data || !isset($data['last_logfile'])) {
-            sendResponse(false, 'Ungültige Antwort vom Chat-Server!');
+        
+        // Fehleranalyse
+        if ($errorNumber > 0) {
+            // cURL-Fehler (z.B. Server nicht erreichbar)
+            error_log('Chat-Server-Test: Verbindung fehlgeschlagen. Grund: ' . $errorMsg);
+            sendResponse(false, 'Verbindung zum Chat-Server fehlgeschlagen: ' . $errorMsg);
+            return;
         }
-        sendResponse(true, 'Verbindung erfolgreich', ['last_logfile' => $data['last_logfile']]);
+        
+        // HTTP-Fehler prüfen
+        if ($httpCode != 200) {
+            if ($httpCode == 401) {
+                error_log('Chat-Server-Test: Authentifizierungsfehler (401)');
+                sendResponse(false, 'Authentifizierungsfehler: Benutzername oder Passwort falsch');
+            } else {
+                error_log('Chat-Server-Test: HTTP-Fehler ' . $httpCode);
+                sendResponse(false, 'HTTP-Fehler ' . $httpCode);
+            }
+            return;
+        }
+        
+        // Antwort verarbeiten
+        $data = @json_decode($response, true);
+        if ($data === null) {
+            error_log('Chat-Server-Test: Keine gültige JSON-Antwort! Rohtext: ' . substr($response, 0, 100) . '...');
+            sendResponse(false, 'Ungültige Antwort vom Chat-Server: Keine JSON-Daten');
+            return;
+        }
+        
+        // Basierend auf dem Python-Code gibt der Server ein Array von Chat-Nachrichten zurück
+        // Wir prüfen ob es ein Array ist statt nach dem Feld 'last_logfile' zu suchen
+        if (!is_array($data)) {
+            error_log('Chat-Server-Test: Unerwartetes Format in der Antwort. Erwartet ein Array, erhalten: ' . json_encode($data));
+            sendResponse(false, 'Ungültige Antwort vom Chat-Server: Kein Array erhalten');
+            return;
+        }
+        
+        // Erfolg! Wir senden die ersten paar Chat-Nachrichten zurück als Referenz
+        $chatCount = count($data);
+        $sampleData = array_slice($data, 0, min(3, $chatCount)); // Erste 3 Nachrichten
+        
+        error_log('Chat-Server-Test: Verbindung erfolgreich. ' . $chatCount . ' Chat-Nachrichten gefunden.');
+        sendResponse(true, 'Verbindung erfolgreich', [
+            'chat_count' => $chatCount,
+            'sample_data' => $sampleData
+        ]);
         break;
     // API-Verbindung testen (Setup-Schritt 2 oder API-Test-Button)
     case 'setup_step':
@@ -231,12 +753,83 @@ $testClient = new ApiClient($apiUrl, $apiPassword);
         
         // Aktuelle Bans zählen
         $banCount = count($db->getActiveBans());
+        
+        // Steam-Profildaten abrufen, wenn verfügbar
+        $steamProfiles = [];
+        if ($steamAPI !== null) {
+            // Alle Steam IDs aus den aktiven und kürzlich abgemeldeten Spielern sammeln
+            $steamIds = [];
+            foreach ($activePlayersList as $player) {
+                if (isset($player['unique_id'])) {
+                    $steamIds[] = $player['unique_id'];
+                }
+            }
+            foreach ($recentPlayers as $player) {
+                if (isset($player['unique_id'])) {
+                    $steamIds[] = $player['unique_id'];
+                }
+            }
+            
+            // Steam-Profile abrufen
+            if (!empty($steamIds)) {
+                $steamProfiles = $steamAPI->getMultipleProfiles($steamIds);
+            }
+        }
+
+        // Server-Ressourcen abrufen
+        $chatConfig = $config['chat_server'];
+        $url = rtrim($chatConfig['url'], '/');
+        $port = $chatConfig['port'];
+        $username = $chatConfig['username'];
+        $password = $chatConfig['password'];
+        $resourceUrl = $url . ':' . $port . '/server/resources';
+        $opts = [
+            'http' => [
+                'method'  => 'GET',
+                'header'  => 'Authorization: Basic ' . base64_encode($username . ':' . $password)
+            ]
+        ];
+        $context = stream_context_create($opts);
+        $res = @file_get_contents($resourceUrl, false, $context);
+        // Standardwerte initialisieren
+        $cpu_percent = 0;
+        $disk_total_gb = $disk_used_gb = 0;
+        $ram_total_mb = $ram_used_mb = 0;
+        $net_in_mb = $net_out_mb = 0;
+        $memory_percent = $disk_percent = 0;
+        if ($res !== FALSE) {
+            $resData = json_decode($res, true);
+            if (is_array($resData)) {
+                $cpu_percent = isset($resData['cpu_percent']) ? round($resData['cpu_percent']) : 0;
+                $disk_total_gb = isset($resData['disk_total_gb']) ? $resData['disk_total_gb'] : 0;
+                $disk_used_gb = isset($resData['disk_used_gb']) ? $resData['disk_used_gb'] : 0;
+                $ram_total_mb = isset($resData['ram_total_mb']) ? $resData['ram_total_mb'] : 0;
+                $ram_used_mb = isset($resData['ram_used_mb']) ? $resData['ram_used_mb'] : 0;
+                $net_in_mb = isset($resData['net_in_mb']) ? $resData['net_in_mb'] : 0;
+                $net_out_mb = isset($resData['net_out_mb']) ? $resData['net_out_mb'] : 0;
+
+                // Prozentuale Auslastung berechnen
+                $memory_percent = $ram_total_mb > 0 ? round($ram_used_mb / $ram_total_mb * 100) : 0;
+                $disk_percent = $disk_total_gb > 0 ? round($disk_used_gb / $disk_total_gb * 100) : 0;
+            }
+        }
+
         // Daten zurückgeben
         sendResponse(true, '', [
-            'player_count' => isset($playerCount['num_players']) ? $playerCount['num_players'] : 0,
-            'ban_count' => $banCount,
+            'player_count'    => isset($playerCount['num_players']) ? $playerCount['num_players'] : 0,
+            'ban_count'      => $banCount,
             'active_players' => $activePlayersList,
-            'recent_players' => $recentPlayers
+            'recent_players'  => $recentPlayers,
+            'steam_profiles'  => $steamProfiles,
+            'cpu_percent'     => $cpu_percent,
+            'ram_total_mb'    => $ram_total_mb,
+            'ram_used_mb'     => $ram_used_mb,
+            'memory_percent'  => $memory_percent,
+            'disk_total_gb'   => $disk_total_gb,
+            'disk_used_gb'    => $disk_used_gb,
+            'disk_percent'    => $disk_percent,
+            'net_in_mb'       => $net_in_mb,
+            'net_out_mb'      => $net_out_mb
         ]);
         break;
         
@@ -456,6 +1049,11 @@ $testClient = new ApiClient($apiUrl, $apiPassword);
         
     // Chat-Nachricht senden
     case 'send_chat_message':
+        // Prüfen, ob der Benutzer die Berechtigung hat, Nachrichten zu senden
+        if (!hasPermission('chat_send')) {
+            sendResponse(false, 'Keine Berechtigung zum Senden von Chat-Nachrichten!');
+        }
+        
         if (!isset($_POST['message'])) {
             sendResponse(false, 'Keine Nachricht angegeben');
         }
@@ -688,18 +1286,170 @@ $testClient = new ApiClient($apiUrl, $apiPassword);
             $config['api']['password'] = $apiPassword;
         }
         
+        // Sicherstellen, dass setup_completed=true erhalten bleibt
+        $config['settings']['setup_completed'] = true;
+        
+        // Konfiguration speichern
+        if (!saveConfig($config)) {
+            sendResponse(false, 'Fehler beim Speichern der Konfiguration');
+        }
+        sendResponse(true, t('settings_saved'));
+        break;
+        
+    // Passwort ändern
+    // Admin-Verwaltung: Liste der Admins abrufen
+    case 'get_admins':
+        // Debug-Output
+        error_log('get_admins: ' . json_encode($config['admins']));
+        
+        // Erlaube auch normalen Administratoren Zugriff auf die Admin-Liste
+        if (!isMasterAdmin() && !hasPermission('settings_admins')) {
+            sendResponse(false, 'Keine Berechtigung für die Verwaltung von Admin-Konten');
+        }
+        
+        $admins = [];
+        foreach ($config['admins'] as $username => $adminData) {
+            $admins[] = [
+                'username' => $username,
+                'role' => $adminData['role'],
+                'active' => $adminData['active']
+            ];
+        }
+        
+        sendResponse(true, '', ['admins' => $admins]);
+        break;
+        
+    // Admin-Verwaltung: Neuen Admin hinzufügen
+    case 'add_admin':
+        if (!isMasterAdmin() && !hasPermission('settings_admins')) {
+            sendResponse(false, 'Keine Berechtigung für die Verwaltung von Admin-Konten');
+        }
+        
+        if (!isset($_POST['username']) || !isset($_POST['password']) || !isset($_POST['role'])) {
+            sendResponse(false, 'Unvollständige Daten');
+        }
+        
+        $username = trim($_POST['username']);
+        $password = $_POST['password'];
+        $role = $_POST['role'];
+        $active = isset($_POST['active']) && $_POST['active'] === 'true';
+        
+        // Prüfen, ob der Benutzername bereits existiert
+        if (isset($config['admins'][$username]) || $username === $config['master_admin']['username']) {
+            sendResponse(false, 'Dieser Benutzername existiert bereits');
+        }
+        
+        // Neuen Admin hinzufügen
+        $config['admins'][$username] = [
+            'password' => hashPassword($password),
+            'role' => $role,
+            'active' => $active
+        ];
+        
         // Konfiguration speichern
         if (!saveConfig($config)) {
             sendResponse(false, 'Fehler beim Speichern der Konfiguration');
         }
         
-        sendResponse(true, t('settings_saved'));
+        sendResponse(true, t('admin_added'));
+        break;
+    
+    // Admin-Verwaltung: Admin aktualisieren
+    case 'update_admin':
+        if (!isMasterAdmin() && !hasPermission('settings_admins')) {
+            sendResponse(false, 'Keine Berechtigung für die Verwaltung von Admin-Konten');
+        }
+        
+        if (!isset($_POST['username']) || !isset($_POST['role'])) {
+            sendResponse(false, 'Unvollständige Daten');
+        }
+        
+        $username = trim($_POST['username']);
+        $originalUsername = trim($_POST['original_username'] ?? $username);
+        $role = $_POST['role'];
+        $active = isset($_POST['active']) && $_POST['active'] === 'true';
+        $password = isset($_POST['password']) ? $_POST['password'] : null;
+        
+        // Prüfen, ob der Admin existiert
+        if (!isset($config['admins'][$originalUsername])) {
+            sendResponse(false, 'Admin nicht gefunden');
+        }
+        
+        // Master-Admin darf nicht deaktiviert werden
+        if ($config['admins'][$originalUsername]['role'] === 'master' && (!$active || $role !== 'master')) {
+            sendResponse(false, 'Der Master-Admin kann nicht deaktiviert oder in seiner Rolle geändert werden');
+        }
+        
+        // Admin aktualisieren
+        $adminData = $config['admins'][$originalUsername];
+        
+        // Wenn der Benutzername geändert wurde
+        if ($username !== $originalUsername) {
+            // Prüfen, ob der neue Benutzername bereits existiert
+            if (isset($config['admins'][$username])) {
+                sendResponse(false, 'Dieser Benutzername existiert bereits');
+            }
+            
+            // Admin unter neuem Namen anlegen
+            $config['admins'][$username] = $adminData;
+            // Alten Admin entfernen
+            unset($config['admins'][$originalUsername]);
+        }
+        
+        // Daten aktualisieren
+        $config['admins'][$username]['role'] = $role;
+        $config['admins'][$username]['active'] = $active;
+        
+        // Passwort aktualisieren, wenn angegeben
+        if ($password) {
+            $config['admins'][$username]['password'] = hashPassword($password);
+        }
+        
+        // Konfiguration speichern
+        if (!saveConfig($config)) {
+            sendResponse(false, 'Fehler beim Speichern der Konfiguration');
+        }
+        
+        sendResponse(true, t('admin_updated'));
+        break;
+    
+    // Admin-Verwaltung: Admin löschen
+    case 'delete_admin':
+        if (!isMasterAdmin() && !hasPermission('settings_admins')) {
+            sendResponse(false, 'Keine Berechtigung für die Verwaltung von Admin-Konten');
+        }
+        
+        if (!isset($_POST['username'])) {
+            sendResponse(false, 'Kein Benutzername angegeben');
+        }
+        
+        $username = trim($_POST['username']);
+        
+        // Prüfen, ob der Admin existiert
+        if (!isset($config['admins'][$username])) {
+            sendResponse(false, 'Admin nicht gefunden');
+        }
+        
+        // Master-Admin darf nicht gelöscht werden
+        if ($config['admins'][$username]['role'] === 'master') {
+            sendResponse(false, 'Der Master-Admin kann nicht gelöscht werden');
+        }
+        
+        // Admin entfernen
+        unset($config['admins'][$username]);
+        
+        // Konfiguration speichern
+        if (!saveConfig($config)) {
+            sendResponse(false, 'Fehler beim Speichern der Konfiguration');
+        }
+        
+        sendResponse(true, t('admin_deleted'));
         break;
         
-    // Passwort ändern
     case 'change_password':
+        // Prüfen ob alle Felder gesetzt sind
         if (!isset($_POST['current_password']) || !isset($_POST['new_password']) || !isset($_POST['confirm_password'])) {
-            sendResponse(false, 'Fehlende Parameter');
+            sendResponse(false, 'Unvollständige Daten');
         }
         
         $currentPassword = $_POST['current_password'];
@@ -815,6 +1565,106 @@ $testClient = new ApiClient($apiUrl, $apiPassword);
         }
         break;
         
+    // Berechtigungen für Rollenverwaltung abrufen
+    case 'get_permissions':
+        // Nur für Benutzer mit entsprechenden Berechtigungen
+        if (!hasPermission('settings_roles') && !isMasterAdmin()) {
+            sendResponse(false, 'Keine Berechtigung für die Rollenverwaltung');
+        }
+        
+        // Aktuelle Rolle des Benutzers bestimmen
+        $currentRole = 'viewer'; // Standardwert
+        if (isMasterAdmin()) {
+            $currentRole = 'master';
+        } else {
+            $username = getCurrentUsername();
+            if (isset($config['admins'][$username]['role'])) {
+                $currentRole = $config['admins'][$username]['role'];
+            }
+        }
+        
+        // Berechtigungen aus der Konfiguration zurückgeben
+        sendResponse(true, '', [
+            'permissions' => $config['permissions'],
+            'current_role' => $currentRole
+        ]);
+        break;
+        
+    // Berechtigungen speichern
+    case 'save_permissions':
+        // Nur für Benutzer mit entsprechenden Berechtigungen
+        if (!hasPermission('settings_roles') && !isMasterAdmin()) {
+            sendResponse(false, 'Keine Berechtigung für die Rollenverwaltung');
+        }
+        
+        if (!isset($_POST['permissions'])) {
+            sendResponse(false, 'Keine Berechtigungen angegeben');
+        }
+        
+        // Berechtigungen aus dem POST-Parameter dekodieren
+        $updatedPermissions = json_decode($_POST['permissions'], true);
+        if (!$updatedPermissions || !isset($updatedPermissions['roles'])) {
+            sendResponse(false, 'Ungültiges Format der Berechtigungen');
+        }
+        
+        // Aktuelle Rolle des Benutzers bestimmen
+        $currentRole = 'viewer'; // Standardwert
+        if (isMasterAdmin()) {
+            $currentRole = 'master';
+        } else {
+            $username = getCurrentUsername();
+            if (isset($config['admins'][$username]['role'])) {
+                $currentRole = $config['admins'][$username]['role'];
+            }
+        }
+        
+        // Rollengewichte definieren
+        $roleWeights = [
+            'master' => 4,
+            'admin' => 3,
+            'moderator' => 2,
+            'viewer' => 1
+        ];
+        
+        $currentRoleWeight = $roleWeights[$currentRole] ?? 0;
+        
+        // Vor Beginn der Verifizierung prüfen, welche Rollen tatsächlich bearbeitet werden
+        // Nur Rollen bearbeiten, die auch in der Anfrage enthalten sind und die der Benutzer bearbeiten darf
+        $rolesToUpdate = [];
+        
+        foreach ($updatedPermissions['roles'] as $role => $roleData) {
+            $roleWeight = $roleWeights[$role] ?? 0;
+            
+            // Master Admin darf alle Rollen bearbeiten
+            if ($currentRole === 'master' || $roleWeight < $currentRoleWeight) {
+                $rolesToUpdate[] = $role;
+            }
+        }
+        
+        // Berechtigungen in der Konfiguration aktualisieren
+        // Nur die Rollen aktualisieren, die als gültig markiert wurden
+        if (empty($rolesToUpdate)) {
+            sendResponse(false, "Sie haben keine Berechtigungen zum Bearbeiten der angegebenen Rollen");
+        }
+        
+        foreach ($rolesToUpdate as $role) {
+            if (isset($updatedPermissions['roles'][$role])) {
+                // Berechtigungen aktualisieren
+                $config['permissions']['roles'][$role]['permissions'] = $updatedPermissions['roles'][$role]['permissions'];
+            }
+        }
+        
+        // Konfiguration speichern
+        if (!saveConfig($config)) {
+            sendResponse(false, 'Fehler beim Speichern der Konfiguration');
+        }
+        
+        // Aktivitätsprotokoll
+        logActivity('info', 'Berechtigungen aktualisiert', "Benutzer: $username");
+        
+        sendResponse(true, 'Berechtigungen erfolgreich gespeichert');
+        break;
+
     default:
         sendResponse(false, 'Unbekannte Aktion');
 }

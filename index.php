@@ -3,6 +3,19 @@
  * Motor Town Web Interface (MTWI) - Hauptindex
  */
 
+// Prüfen, ob das Setup bereits durchgeführt wurde
+if (!file_exists('config/config.php')) {
+    header('Location: setup/index.php');
+    exit;
+}
+
+// Prüfen, ob die Konfiguration setup_completed enthält
+$config = include('config/config.php');
+if (!isset($config['settings']['setup_completed']) || $config['settings']['setup_completed'] !== true) {
+    header('Location: setup/index.php');
+    exit;
+}
+
 try {
     // Initialisierung
     require_once 'includes/init.php';
@@ -34,7 +47,37 @@ try {
     // Seite einbinden, falls vorhanden
     $pagePath = 'pages/' . $page . '.php';
     if (file_exists($pagePath)) {
-        require_once $pagePath;
+        // Prüfen, ob der Benutzer auf diese Seite zugreifen darf
+        $hasAccess = true;
+        
+        // Zugriffsprüfungen für die verschiedenen Seiten
+        if (isLoggedIn()) {
+            switch ($page) {
+                case 'dashboard':
+                    $hasAccess = hasPermission('dashboard_view');
+                    break;
+                case 'player_overview':
+                    $hasAccess = hasPermission('player_view');
+                    break;
+                case 'banlist':
+                    $hasAccess = hasPermission('player_ban');
+                    break;
+                case 'chat':
+                    $hasAccess = hasPermission('chat_view');
+                    break;
+                case 'settings':
+                    $hasAccess = hasPermission('settings_view');
+                    break;
+                // Standardseiten (Login, Logout usw.) sind immer zugänglich
+            }
+        }
+        
+        if ($hasAccess) {
+            require_once $pagePath;
+        } else {
+            // Zugriff verweigert
+            displayError(t('access_denied'), t('access_denied_message'));
+        }
     } else {
         // 404-Fehler
         echo '<div class="container mt-5"><div class="alert alert-danger">Seite nicht gefunden (404).</div></div>';

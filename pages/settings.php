@@ -6,20 +6,58 @@
             </div>
             <div class="card-body">
                 <ul class="nav nav-tabs mb-4" id="settingsTabs" role="tablist">
+                    <?php if (hasPermission('settings_api')): ?>
                     <li class="nav-item" role="presentation">
-                        <a class="nav-link active" id="api-tab" data-bs-toggle="tab" href="#api" role="tab"><?php echo t('api_settings'); ?></a>
+                        <a class="nav-link" id="api-tab" data-bs-toggle="tab" href="#api" role="tab"><?php echo t('api_settings'); ?></a>
                     </li>
+                    <?php endif; ?>
+                    <?php if (hasPermission('settings_server')): ?>
                     <li class="nav-item" role="presentation">
                         <a class="nav-link" id="chat-server-tab" data-bs-toggle="tab" href="#chat-server" role="tab">Chat-Server (Alpha)</a>
                     </li>
+                    <?php endif; ?>
+                    <?php if (hasPermission('settings_account')): ?>
                     <li class="nav-item" role="presentation">
                         <a class="nav-link" id="account-tab" data-bs-toggle="tab" href="#account" role="tab"><?php echo t('account_settings'); ?></a>
                     </li>
+                    <?php endif; ?>
+                    <?php if (hasPermission('settings_admins') || isMasterAdmin()): ?>
+                    <li class="nav-item" role="presentation">
+                        <a class="nav-link" id="admin-management-tab" data-bs-toggle="tab" href="#admin-management" role="tab"><?php echo t('admin_management'); ?></a>
+                    </li>
+                    <?php endif; ?>
+                    
+                    <?php /* Rollenverwaltung ausgeblendet
+                    <?php if (hasPermission('settings_roles') || isMasterAdmin()): ?>
+                    <li class="nav-item" role="presentation">
+                        <a class="nav-link" id="role-management-tab" data-bs-toggle="tab" href="#role-management" role="tab">Rollenverwaltung</a>
+                    </li>
+                    <?php endif; ?>
+                    */?>
+
                 </ul>
                 
+                <!-- Bootstrap 5 Tab-Hilfe-->
+                <script>
+                $(document).on('shown.bs.tab', 'a[data-bs-toggle="tab"]', function (e) {
+                    // Alte Tab-Inhalte verstecken
+                    $('.tab-pane').removeClass('show active');
+                    
+                    // Neue Tab-Inhalte anzeigen
+                    var target = $(e.target).attr('data-bs-target');
+                    if (!target) {
+                        target = $(e.target).attr('href');
+                    }
+                    
+                    $(target).addClass('show active');
+                    console.log('Tab switched to: ' + target);
+                });
+                </script>
+                
                 <div class="tab-content" id="settingsTabsContent">
+
                     <!-- Chat-Server Einstellungen (Alpha) -->
-                    <div class="tab-pane fade" id="chat-server" role="tabpanel" aria-labelledby="chat-server-tab">
+                    <div class="tab-pane fade show" id="chat-server" role="tabpanel" aria-labelledby="chat-server-tab">
                         <form id="chatServerSettingsForm">
                             <div class="alert alert-warning mb-3">
                                 <i class="bi bi-exclamation-triangle me-2"></i>
@@ -79,7 +117,7 @@
                     -->
                     
                     <!-- API-Einstellungen -->
-                    <div class="tab-pane fade show active" id="api" role="tabpanel" aria-labelledby="api-tab">
+                    <div class="tab-pane fade show" id="api" role="tabpanel" aria-labelledby="api-tab">
                         <form id="apiSettingsForm">
                             <div class="mb-3">
                                 <label for="api_url" class="form-label"><?php echo t('api_url'); ?></label>
@@ -102,7 +140,7 @@
                     </div>
                     
                     <!-- Kontoeinstellungen -->
-                    <div class="tab-pane fade" id="account" role="tabpanel" aria-labelledby="account-tab">
+                    <div class="tab-pane fade show" id="account" role="tabpanel" aria-labelledby="account-tab">
                         <form id="changePasswordForm">
                             <div class="mb-3">
                                 <label for="current_password" class="form-label"><?php echo t('current_password'); ?></label>
@@ -122,6 +160,64 @@
                             <button type="submit" class="btn btn-primary"><?php echo t('change_password'); ?></button>
                         </form>
                     </div>
+                    
+                    <?php if (isMasterAdmin() || hasPermission('settings_admins')): ?>
+                    <!-- Admin-Verwaltung -->
+                    <div class="tab-pane fade show" id="admin-management" role="tabpanel" aria-labelledby="admin-management-tab">
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <h4><?php echo t('admin_accounts'); ?></h4>
+                            <button type="button" id="addAdminBtn" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#adminModal">
+                                <i class="bi bi-plus-circle"></i> <?php echo t('add_admin'); ?>
+                            </button>
+                        </div>
+                        
+                        <div class="table-responsive">
+                            <table class="table table-striped table-hover" id="adminAccountsTable">
+                                <thead>
+                                    <tr>
+                                        <th><?php echo t('username'); ?></th>
+                                        <th><?php echo t('role'); ?></th>
+                                        <th><?php echo t('status'); ?></th>
+                                        <th class="text-end"><?php echo t('actions'); ?></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td colspan="4" class="text-center"><?php echo t('loading'); ?></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <?php endif; ?>
+                    
+                    <?php /* Rollenverwaltung ausgeblendet 
+                    <?php if (hasPermission('settings_roles') || isMasterAdmin()): ?>
+                    <!-- Rollenverwaltung -->
+                    <div class="tab-pane fade show" id="role-management" role="tabpanel" aria-labelledby="role-management-tab">
+                        <div class="mb-4">
+                            <h4>Rollenverwaltung</h4>
+                            <div class="alert alert-info">
+                                <i class="bi bi-info-circle"></i> Hier können Sie die Berechtigungen für jede Rolle anpassen. Die Änderungen werden wirksam, sobald Sie auf "Speichern" klicken.
+                            </div>
+                            <div id="rolePermissionsContainer">
+                                <div class="text-center p-5">
+                                    <div class="spinner-border text-primary" role="status">
+                                        <span class="visually-hidden">Wird geladen...</span>
+                                    </div>
+                                    <p class="mt-3">Berechtigungen werden geladen...</p>
+                                </div>
+                            </div>
+                            
+                            <div class="mt-4 d-grid gap-2 d-md-flex justify-content-md-end">
+                                <button type="button" id="saveRolesBtn" class="btn btn-primary">
+                                    <i class="bi bi-save"></i> Speichern
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <?php endif; ?>
+                    <?php */?>
                 </div>
             </div>
         </div>
@@ -134,9 +230,312 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <!-- Custom JavaScript -->
     <script src="assets/js/script.js"></script>
+    <!-- Rollenverwaltung JavaScript -->
+    <script src="assets/js/role_management.js"></script>
+    <!-- Admin-Modal zum Hinzufügen/Bearbeiten von Admins -->
+    <?php if (isMasterAdmin() || hasPermission('settings_admins')): ?>
+    <div class="modal fade" id="adminModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="adminModalTitle"><?php echo t('add_admin'); ?></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form id="adminForm">
+                    <div class="modal-body">
+                        <input type="hidden" id="admin_action" name="admin_action" value="add">
+                        <input type="hidden" id="admin_original_username" name="admin_original_username" value="">
+                        
+                        <div class="mb-3">
+                            <label for="admin_username" class="form-label"><?php echo t('username'); ?></label>
+                            <input type="text" class="form-control" id="admin_username" name="admin_username" required>
+                        </div>
+                        
+                        <div class="mb-3" id="passwordSection">
+                            <label for="admin_password" class="form-label"><?php echo t('password'); ?></label>
+                            <input type="password" class="form-control" id="admin_password" name="admin_password" required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="admin_role" class="form-label"><?php echo t('role'); ?></label>
+                            <select class="form-select" id="admin_role" name="admin_role">
+                                <option value="admin"><?php echo t('role_admin'); ?></option>
+                                <option value="editor"><?php echo t('role_editor'); ?></option>
+                                <option value="viewer"><?php echo t('role_viewer'); ?></option>
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3 form-check">
+                            <input type="checkbox" class="form-check-input" id="admin_active" name="admin_active" checked>
+                            <label class="form-check-label" for="admin_active"><?php echo t('active_account'); ?></label>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"><?php echo t('cancel'); ?></button>
+                        <button type="submit" class="btn btn-primary" id="saveAdminBtn"><?php echo t('save'); ?></button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <?php endif; ?>
+    
     <!-- Settings-spezifisches JavaScript -->
     <script>
+    // Übersetzungsfunktion und Übersetzungen
+    function t(key) {
+        return translations[key] || key;
+    }
+    
+    // Übersetzungen für JavaScript
+    const translations = {
+        role_master: '<?php echo t('role_master'); ?>',
+        role_admin: '<?php echo t('role_admin'); ?>',
+        role_editor: '<?php echo t('role_editor'); ?>',
+        role_viewer: '<?php echo t('role_viewer'); ?>',
+        active: '<?php echo t('active'); ?>',
+        inactive: '<?php echo t('inactive'); ?>',
+        master_admin: '<?php echo t('role_master'); ?>',
+        edit_admin: '<?php echo t('edit_admin'); ?>',
+        add_admin: '<?php echo t('add_admin'); ?>',
+        admin_confirm_delete: '<?php echo t('admin_confirm_delete'); ?>'
+    };
+    
     $(document).ready(function() {
+    <?php if (isMasterAdmin() || hasPermission('settings_admins')): ?>
+    // Admin-Verwaltung: Admins laden
+    function loadAdmins() {
+        $.ajax({
+            url: 'ajax_handler.php',
+            type: 'POST',
+            data: {
+                action: 'get_admins',
+                csrf_token: CSRF_TOKEN
+            },
+            success: function(response) {
+                try {
+                    const data = JSON.parse(response);
+                    if (data.success && data.data.admins) {
+                        updateAdminTable(data.data.admins);
+                    } else {
+                        showNotification(data.message || 'Fehler beim Laden der Admins', 'danger');
+                    }
+                } catch (error) {
+                    showNotification('Fehler beim Verarbeiten der Antwort', 'danger');
+                }
+            },
+            error: function() {
+                showNotification('Serverfehler', 'danger');
+            }
+        });
+    }
+    
+    // Admin-Tabelle aktualisieren
+    function updateAdminTable(admins) {
+        const tableBody = $('#adminAccountsTable tbody');
+        tableBody.empty();
+        
+        if (admins.length === 0) {
+            tableBody.append(`
+                <tr>
+                    <td colspan="4" class="text-center">Keine Administratoren gefunden</td>
+                </tr>
+            `);
+            return;
+        }
+        
+        admins.forEach(function(admin) {
+            const roleName = admin.role === 'master' ? t('role_master') : 
+                           admin.role === 'admin' ? t('role_admin') : 
+                           admin.role === 'editor' ? t('role_editor') : t('role_viewer');
+                           
+            const statusBadge = admin.active ? 
+                `<span class="badge bg-success">${t('active')}</span>` : 
+                `<span class="badge bg-danger">${t('inactive')}</span>`;
+                
+            // Master-Admin kann nicht bearbeitet oder gelöscht werden
+            const actionButtons = admin.role === 'master' ? 
+                `<span class="text-muted">${t('master_admin')}</span>` : 
+                `<button type="button" class="btn btn-sm btn-primary edit-admin-btn" data-bs-toggle="modal" data-bs-target="#adminModal" data-username="${admin.username}" data-role="${admin.role}" data-active="${admin.active}">
+                    <i class="bi bi-pencil"></i>
+                </button>
+                <button type="button" class="btn btn-sm btn-danger delete-admin-btn" data-username="${admin.username}">
+                    <i class="bi bi-trash"></i>
+                </button>`;
+            
+            tableBody.append(`
+                <tr>
+                    <td>${admin.username}</td>
+                    <td>${roleName}</td>
+                    <td>${statusBadge}</td>
+                    <td class="text-end">${actionButtons}</td>
+                </tr>
+            `);
+        });
+    }
+    
+    // Admin-Modal vorbereiten
+    $('#adminModal').on('show.bs.modal', function(e) {
+        const trigger = $(e.relatedTarget);
+        const isEdit = trigger.hasClass('edit-admin-btn');
+        const modal = $(this);
+        
+        // Modal-Titel ändern
+        modal.find('.modal-title').text(isEdit ? t('edit_admin') : t('add_admin'));
+        
+        // Hidden-Felder zurücksetzen
+        $('#admin_action').val(isEdit ? 'update' : 'add');
+        $('#admin_original_username').val(isEdit ? trigger.data('username') : '');
+        
+        // Formular zurücksetzen und Werte setzen
+        $('#adminForm')[0].reset();
+        
+        if (isEdit) {
+            $('#admin_username').val(trigger.data('username'));
+            $('#admin_role').val(trigger.data('role'));
+            $('#admin_active').prop('checked', trigger.data('active') === true || trigger.data('active') === 'true');
+            
+            // Bei Bearbeitung ist Passwort optional
+            $('#admin_password').removeAttr('required');
+            $('#passwordSection').append('<div class="form-text">Leer lassen, um das Passwort nicht zu ändern</div>');
+        } else {
+            // Bei Neuanlage ist Passwort erforderlich
+            $('#admin_password').attr('required', 'required');
+            $('#passwordSection .form-text').remove();
+        }
+    });
+    
+    // Verbesserte Fehlerbehandlung für Modal-Schließen
+    $('#adminModal').on('hidden.bs.modal', function() {
+        // Sicherstellen, dass alle Modal-Reste entfernt werden
+        $('.modal-backdrop').remove();
+        $('body').removeClass('modal-open').css('padding-right', '');
+    });
+    
+    // Admin hinzufügen/bearbeiten
+    $('#adminForm').on('submit', function(e) {
+        e.preventDefault();
+        
+        const action = $('#admin_action').val() === 'update' ? 'update_admin' : 'add_admin';
+        const originalUsername = $('#admin_original_username').val();
+        const username = $('#admin_username').val();
+        const password = $('#admin_password').val();
+        const role = $('#admin_role').val();
+        const active = $('#admin_active').is(':checked');
+        
+        // Validierung
+        if (!username) {
+            showNotification('Bitte Benutzernamen eingeben', 'danger');
+            return;
+        }
+        
+        if (action === 'add_admin' && !password) {
+            showNotification('Bitte Passwort eingeben', 'danger');
+            return;
+        }
+        
+        // AJAX-Anfrage
+        const data = {
+            action: action,
+            username: username,
+            role: role,
+            active: active.toString(),
+            csrf_token: CSRF_TOKEN
+        };
+        
+        if (action === 'update_admin') {
+            data.original_username = originalUsername;
+        }
+        
+        if (password) {
+            data.password = password;
+        }
+        
+        console.log('Sending admin data:', data);
+
+        $.ajax({
+            url: 'ajax_handler.php',
+            type: 'POST',
+            data: data,
+            beforeSend: function() {
+                $('#saveAdminBtn').prop('disabled', true);
+            },
+            success: function(response) {
+                try {
+                    console.log('Response from server:', response);
+                    const data = JSON.parse(response);
+                    if (data.success) {
+                        showNotification(data.message, 'success');
+                        
+                        // Richtige Reihenfolge für das Modal-Schließen
+                        $('#adminModal').modal('hide');
+                        
+                        // Kurze Verzögerung vor dem Neuladen der Admin-Liste
+                        setTimeout(function() {
+                            // Admin-Verwaltungs-Tab aktivieren und Admin-Liste neu laden
+                            $('#admin-management-tab').tab('show');
+                            loadAdmins();
+                            $('.modal-backdrop').remove();
+                            $('body').removeClass('modal-open').css('padding-right', '');
+                        }, 500);
+                    } else {
+                        showNotification(data.message, 'danger');
+                    }
+                } catch (error) {
+                    console.error('Error parsing JSON:', error, response);
+                    showNotification('Fehler beim Verarbeiten der Antwort: ' + error.message, 'danger');
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error('AJAX error:', status, error, xhr.responseText);
+                showNotification('Serverfehler: ' + error, 'danger');
+            },
+            complete: function() {
+                $('#saveAdminBtn').prop('disabled', false);
+            }
+        });
+    });
+    
+    // Admin löschen
+    $(document).on('click', '.delete-admin-btn', function() {
+        const username = $(this).data('username');
+        
+        if (confirm(t('admin_confirm_delete').replace('{username}', username))) {
+            $.ajax({
+                url: 'ajax_handler.php',
+                type: 'POST',
+                data: {
+                    action: 'delete_admin',
+                    username: username,
+                    csrf_token: CSRF_TOKEN
+                },
+                success: function(response) {
+                    try {
+                        const data = JSON.parse(response);
+                        if (data.success) {
+                            showNotification(data.message, 'success');
+                            // Admin-Verwaltungs-Tab aktivieren und Admin-Liste neu laden
+                            $('#admin-management-tab').tab('show');
+                            localStorage.setItem('mtwi_active_settings_tab', 'admin-management');
+                            loadAdmins();
+                        } else {
+                            showNotification(data.message, 'danger');
+                        }
+                    } catch (error) {
+                        showNotification('Fehler beim Verarbeiten der Antwort', 'danger');
+                    }
+                },
+                error: function() {
+                    showNotification('Serverfehler', 'danger');
+                }
+            });
+        }
+    });
+    
+    // Initial Admins laden
+    loadAdmins();
+    <?php endif; ?>
+    
     // Chat-Server Einstellungen speichern
     $('#chatServerSettingsForm').on('submit', function(e) {
         e.preventDefault();

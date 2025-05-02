@@ -41,7 +41,7 @@ if (isset($currentPage) && $currentPage === 'setup') {
 <?php if (isLoggedIn() && $currentPage != 'setup'): ?>
     <!-- Navigation -->
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary mb-4">
-        <div class="container">
+        <div class="container-fluid">
             <a class="navbar-brand" href="index.php">
                 <?php echo t('app_name'); ?>
             </a>
@@ -50,26 +50,45 @@ if (isset($currentPage) && $currentPage === 'setup') {
             </button>
             <div class="collapse navbar-collapse" id="navbarMain">
                 <ul class="navbar-nav me-auto">
+                    <?php if (hasPermission('dashboard_view')): ?>
                     <li class="nav-item">
                         <a class="nav-link <?php echo $currentPage == 'dashboard' ? 'active' : ''; ?>" href="index.php?page=dashboard">
                             <i class="bi bi-speedometer2"></i> <?php echo t('dashboard'); ?>
                         </a>
                     </li>
+                    <?php endif; ?>
+                    
+                    <?php if (hasPermission('player_view')): ?>
+                    <li class="nav-item">
+                        <a class="nav-link <?php echo $currentPage == 'player_overview' ? 'active' : ''; ?>" href="index.php?page=player_overview">
+                            <i class="bi bi-people"></i> <?php echo t('player_overview_title'); ?>
+                        </a>
+                    </li>
+                    <?php endif; ?>
+                    
+                    <?php if (hasPermission('player_ban')): ?>
                     <li class="nav-item">
                         <a class="nav-link <?php echo $currentPage == 'banlist' ? 'active' : ''; ?>" href="index.php?page=banlist">
                             <i class="bi bi-shield-x"></i> <?php echo t('ban_list'); ?>
                         </a>
                     </li>
+                    <?php endif; ?>
+                    
+                    <?php if (hasPermission('chat_view')): ?>
                     <li class="nav-item">
                         <a class="nav-link <?php echo $currentPage == 'chat' ? 'active' : ''; ?>" href="index.php?page=chat">
                             <i class="bi bi-chat-dots"></i> <?php echo t('chat'); ?>
                         </a>
                     </li>
+                    <?php endif; ?>
+                    
+                    <?php if (hasPermission('settings_view')): ?>
                     <li class="nav-item">
                         <a class="nav-link <?php echo $currentPage == 'settings' ? 'active' : ''; ?>" href="index.php?page=settings">
                             <i class="bi bi-gear"></i> <?php echo t('settings'); ?>
                         </a>
                     </li>
+                    <?php endif; ?>
                 </ul>
                 <ul class="navbar-nav">
                     <li class="nav-item dropdown">
@@ -88,7 +107,7 @@ if (isset($currentPage) && $currentPage === 'setup') {
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="index.php?page=logout">
-                            <i class="bi bi-box-arrow-right"></i> <?php echo t('logout'); ?>
+                            <i class="bi bi-box-arrow-right"></i> <?php echo t('logout'); ?> (<?php echo htmlspecialchars($_SESSION['username']); ?>)
                         </a>
                     </li>
                 </ul>
@@ -97,7 +116,7 @@ if (isset($currentPage) && $currentPage === 'setup') {
     </nav>
 <?php endif; ?>
 
-<div class="container main-container">
+<div class="container-fluid main-container">
     <?php if (isset($_SESSION['flash_message'])): ?>
         <div class="alert alert-<?php echo $_SESSION['flash_type']; ?> alert-dismissible fade show" role="alert">
             <?php echo $_SESSION['flash_message']; ?>

@@ -40,6 +40,8 @@ if (!file_exists($configFile)) {
     require_once MTWI_ROOT . '/includes/api_client.php';
     require_once MTWI_ROOT . '/includes/database.php';
     require_once MTWI_ROOT . '/includes/functions.php';
+    require_once MTWI_ROOT . '/includes/steam_api.php';
+    require_once MTWI_ROOT . '/includes/permissions.php';
 
     // Datenbank initialisieren
     if (!isset($config['database']) || empty($config['database'])) {
@@ -56,6 +58,13 @@ if (!file_exists($configFile)) {
     $apiClient = null;
     if (!empty($config['api']['url']) && !empty($config['api']['password'])) {
         $apiClient = new ApiClient($config['api']['url'], $config['api']['password']);
+    }
+    
+    // Steam API initialisieren
+    $steamAPI = null;
+    if (isset($config['steam_api']) && isset($config['steam_api']['enable_profiles']) && $config['steam_api']['enable_profiles']) {
+        $api_key = $config['steam_api']['key'] ?? '';
+        $steamAPI = new SteamAPI($db->getConnection(), $api_key);
     }
 
     // Sprache laden
@@ -86,6 +95,11 @@ if (!file_exists($configFile)) {
 // Prüfen, ob Benutzer angemeldet ist
 function isLoggedIn() {
     return isset($_SESSION['logged_in']) && $_SESSION['logged_in'] === true;
+}
+
+// Prüfen, ob der angemeldete Benutzer ein Master-Admin ist
+function isMasterAdmin() {
+    return isLoggedIn() && isset($_SESSION['is_master_admin']) && $_SESSION['is_master_admin'] === true;
 }
 
 // Zugriffsschutz
