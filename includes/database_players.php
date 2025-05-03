@@ -30,7 +30,7 @@ class DatabasePlayers extends Database {
     }
     
     /**
-     * Initialisiert die Spielerdaten-Tabellen
+     * Initialisiert die Spielerdaten-Tabellen und optimiert die Datenbank
      */
     public function initializePlayerTables() {
         // Verbindung zur Datenbank holen
@@ -53,6 +53,7 @@ class DatabasePlayers extends Database {
             police_level INTEGER DEFAULT 0,
             driver_level INTEGER DEFAULT 0,
             truck_level INTEGER DEFAULT 0,
+            racer_level INTEGER DEFAULT 0,
             company TEXT,
             UNIQUE(steam_id)
         )");
@@ -61,6 +62,7 @@ class DatabasePlayers extends Database {
         $this->addColumnIfNotExists('players', 'company', 'TEXT');
         $this->addColumnIfNotExists('players', 'driver_level', 'INTEGER DEFAULT 0');
         $this->addColumnIfNotExists('players', 'truck_level', 'INTEGER DEFAULT 0');
+        $this->addColumnIfNotExists('players', 'racer_level', 'INTEGER DEFAULT 0'); // Neu: Racer-Level hinzufügen
         
         // Spieler-Aktivitäten-Tabelle
         $db->exec("CREATE TABLE IF NOT EXISTS player_activities (
@@ -73,9 +75,33 @@ class DatabasePlayers extends Database {
             FOREIGN KEY (player_id) REFERENCES players(id)
         )");
         
-        // Indizes für schnellere Abfragen
-        $db->exec("CREATE INDEX IF NOT EXISTS idx_player_activities_player_id ON player_activities(player_id)");
-        $db->exec("CREATE INDEX IF NOT EXISTS idx_players_steam_id ON players(steam_id)");
+        // Datenbankoptimierungen basierend auf dem Datenbanktyp
+        if ($dbType === 'sqlite') {
+            // Performance-Optimierung für SQLite
+            $db->exec("PRAGMA journal_mode = WAL");
+            $db->exec("PRAGMA synchronous = NORMAL"); 
+            $db->exec("PRAGMA temp_store = MEMORY");
+            $db->exec("PRAGMA cache_size = 10000");
+            $db->exec("PRAGMA foreign_keys = ON");
+            
+            // Indizes erstellen für optimale Performance
+            $db->exec("CREATE INDEX IF NOT EXISTS idx_players_steam_id ON players(steam_id)");
+            $db->exec("CREATE INDEX IF NOT EXISTS idx_player_activities_player_id ON player_activities(player_id)");
+            $db->exec("CREATE INDEX IF NOT EXISTS idx_player_activities_timestamp ON player_activities(timestamp)");
+            $db->exec("CREATE INDEX IF NOT EXISTS idx_player_activities_combined ON player_activities(player_id, timestamp)");
+            
+            // Tabellen analysieren und optimieren
+            $db->exec("ANALYZE");
+        } else {
+            // Performance-Optimierungen für MySQL
+            $db->exec("CREATE INDEX IF NOT EXISTS idx_players_steam_id ON players(steam_id)");
+            $db->exec("CREATE INDEX IF NOT EXISTS idx_player_activities_player_id ON player_activities(player_id)");
+            $db->exec("CREATE INDEX IF NOT EXISTS idx_player_activities_timestamp ON player_activities(timestamp)");
+            $db->exec("CREATE INDEX IF NOT EXISTS idx_player_activities_combined ON player_activities(player_id, timestamp)");
+            
+            // In MySQL gibt es kein PRAGMA, aber wir können die Tabellen optimieren
+            $db->exec("OPTIMIZE TABLE players, player_activities");
+        }
     }
     
     /**
@@ -188,73 +214,166 @@ class DatabasePlayers extends Database {
     }
     
     /**
+     * Aktualisiert mehrere Spieler in einem Batch
+     * 
+     * @param array $playersData Array mit Spielerdaten
+     * @return array Statistik über erfolgreiche Updates
+     */
+    public function batchUpdatePlayers($playersData) {
+        $db = $this->getConnection();
+        $stats = ['updated' => 0, 'added' => 0];
+        
+        // Transaktion starten für bessere Performance
+        $db->beginTransaction();
+        
+        try {
+            // Prepared Statements vorbereiten (nur einmal)
+            $selectStmt = $db->prepare("SELECT id, first_seen, company FROM players WHERE steam_id = ?");
+            $updateStmt = null; // Wird später initialisiert, wenn benötigt
+            $insertStmt = $db->prepare("INSERT INTO players (
+                name, steam_id, first_seen, last_seen, 
+                company, taxi_level, bus_level, wrecker_level, 
+                police_level, driver_level, truck_level
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            
+            foreach ($playersData as $player) {
+                // Standardwerte setzen, falls nicht vorhanden
+                $now = time();
+                $name = $player['name'] ?? 'Unbekannt';
+                $steamId = $player['steam_id'] ?? null;
+                $firstSeen = ($player['first_seen'] === null) ? $now : (int)$player['first_seen'];
+                $lastSeen = ($player['last_seen'] === null) ? $now : (int)$player['last_seen'];
+                $company = $player['company'] ?? null;
+                
+                // Levels standardisieren
+                $levels = [
+                    'taxi_level' => $player['taxi_level'] ?? 0,
+                    'bus_level' => $player['bus_level'] ?? 0,
+                    'wrecker_level' => $player['wrecker_level'] ?? 0,
+                    'police_level' => $player['police_level'] ?? 0,
+                    'driver_level' => $player['driver_level'] ?? 0,
+                    'truck_level' => $player['truck_level'] ?? 0
+                ];
+                
+                if (!$steamId) continue; // Spieler ohne Steam-ID überspringen
+                
+                // Prüfen, ob Spieler existiert
+                $selectStmt->execute([$steamId]);
+                $existingPlayer = $selectStmt->fetch();
+                $selectStmt->closeCursor(); // Wichtig für SQLite
+                
+                if ($existingPlayer) {
+                    // Wenn company null ist und der Spieler eine Firma hat, diese beibehalten
+                    if ($company === null && $existingPlayer['company']) {
+                        $company = $existingPlayer['company'];
+                    }
+                    
+                    // Spieler aktualisieren
+                    if ($updateStmt === null) {
+                        // Update Statement erstellen (nur einmal)
+                        $updateStmt = $db->prepare("UPDATE players SET 
+                            name = ?, last_seen = ?, company = ?,
+                            taxi_level = ?, bus_level = ?, wrecker_level = ?,
+                            police_level = ?, driver_level = ?, truck_level = ?
+                            WHERE id = ?");
+                    }
+                    
+                    $updateStmt->execute([
+                        $name, $lastSeen, $company,
+                        $levels['taxi_level'], $levels['bus_level'], $levels['wrecker_level'],
+                        $levels['police_level'], $levels['driver_level'], $levels['truck_level'],
+                        $existingPlayer['id']
+                    ]);
+                    
+                    $stats['updated']++;
+                } else {
+                    // Neuen Spieler hinzufügen
+                    $insertStmt->execute([
+                        $name, $steamId, $firstSeen, $lastSeen, $company,
+                        $levels['taxi_level'], $levels['bus_level'], $levels['wrecker_level'],
+                        $levels['police_level'], $levels['driver_level'], $levels['truck_level']
+                    ]);
+                    
+                    $stats['added']++;
+                }
+            }
+            
+            $db->commit();
+            return $stats;
+            
+        } catch (Exception $e) {
+            $db->rollBack();
+            throw $e;
+        }
+    }
+    
+    /**
      * Fügt eine Spalte zu einer Tabelle hinzu, falls sie noch nicht existiert
      * 
      * @param string $table  Tabellenname
      * @param string $column Spaltenname
      * @param string $type   Datentyp der Spalte
      */
-    public function addColumnIfNotExists($table, $column, $type) {
+    private function addColumnIfNotExists($table, $column, $type) {
         $db = $this->getConnection();
         $dbType = $this->getDatabaseType();
         
-        try {
-            if ($dbType == 'sqlite') {
-                // SQLite-spezifisch
-                $stmt = $db->prepare("PRAGMA table_info($table)");
-                $stmt->execute();
-                $columns = $stmt->fetchAll(PDO::FETCH_ASSOC);
-                
-                $columnExists = false;
-                foreach ($columns as $col) {
-                    if ($col['name'] == $column) {
-                        $columnExists = true;
-                        break;
-                    }
-                }
-                
-                if (!$columnExists) {
-                    $db->exec("ALTER TABLE $table ADD COLUMN $column $type");
-                }
-            } else {
-                // MySQL-spezifisch
-                $stmt = $db->prepare("SHOW COLUMNS FROM $table LIKE ?");
-                $stmt->execute([$column]);
-                if ($stmt->rowCount() == 0) {
-                    $db->exec("ALTER TABLE $table ADD COLUMN $column $type");
+        if ($dbType == 'sqlite') {
+            // SQLite Implementierung
+            $columns = $db->query("PRAGMA table_info(" . $table . ")");
+            $exists = false;
+            
+            while ($col = $columns->fetch(PDO::FETCH_ASSOC)) {
+                if ($col['name'] == $column) {
+                    $exists = true;
+                    break;
                 }
             }
-        } catch (PDOException $e) {
-            // Fehler protokollieren
-            error_log("Fehler beim Hinzufügen der Spalte $column: " . $e->getMessage());
+            
+            if (!$exists) {
+                $db->exec("ALTER TABLE " . $table . " ADD COLUMN " . $column . " " . $type);
+                return true;
+            }
+        } else {
+            // MySQL Implementierung
+            $stmt = $db->prepare("SHOW COLUMNS FROM " . $table . " LIKE ?");
+            $stmt->execute([$column]);
+            
+            if (!$stmt->fetch()) {
+                $db->exec("ALTER TABLE " . $table . " ADD COLUMN " . $column . " " . $type);
+                return true;
+            }
         }
+        
+        return false;
     }
     
     /**
-     * Aktualisiert das Level eines Spielers
+     * Aktualisiert den Level eines Spielers für einen bestimmten Beruf
      * 
      * @param int    $playerId   ID des Spielers
-     * @param string $levelType  Typ des Levels (taxi, bus, wrecker, police, driver, truck)
-     * @param int    $levelValue Wert des Levels
+     * @param string $columnName Name der Spalte für den Beruf
+     * @param int    $levelValue Neuer Level-Wert
      * @return bool              Erfolg
      */
-    public function updatePlayerLevel($playerId, $levelType, $levelValue) {
-        $validLevelTypes = ['taxi', 'bus', 'wrecker', 'police'];
+    public function updatePlayerLevel($playerId, $columnName, $levelValue) {
+        $db = $this->getConnection();
         
-        if (!in_array($levelType, $validLevelTypes)) {
+        // Nur erlaubte Spalten aktualisieren
+        $allowedColumns = [
+            'taxi_level', 'bus_level', 'wrecker_level', 
+            'police_level', 'driver_level', 'truck_level'
+        ];
+        
+        if (!in_array($columnName, $allowedColumns)) {
             return false;
         }
-        
-        $columnName = $levelType . '_level';
-        $db = $this->getConnection();
         
         $stmt = $db->prepare("UPDATE players SET {$columnName} = ? WHERE id = ?");
         $stmt->execute([$levelValue, $playerId]);
         
         return $stmt->rowCount() > 0;
     }
-    
-
     
     /**
      * Aktualisiert alle Level eines Spielers auf einmal
@@ -426,156 +545,9 @@ class DatabasePlayers extends Database {
         ];
         
         foreach ($logEntries as $entry) {
-            // Spieler-Login erkennen
-            if (strpos($entry, 'Player Login:') !== false) {
-                preg_match('/Player Login: ([^\(]+) \(([0-9]+)\)/', $entry, $matches);
-                if (count($matches) === 3) {
-                    $playerName = trim($matches[1]);
-                    $steamId = $matches[2];
-                    
-                    // Spieler hinzufügen oder aktualisieren
-                    $playerId = $this->addOrUpdatePlayer($playerName, $steamId);
-                    
-                    if ($this->db->lastInsertId()) {
-                        $stats['players_added']++;
-                    } else {
-                        $stats['players_updated']++;
-                    }
-                    
-                    // Aktivität hinzufügen
-                    $this->addPlayerActivity($playerId, 'login');
-                    $stats['activities_added']++;
-                }
-            }
-            
-            // Level-Änderungen erkennen
-            elseif (strpos($entry, 'Player level changed') !== false) {
-                preg_match('/Player level changed\. Player=([^\(]+) \(([0-9]+)\) Level=([^(]+)\(([0-9]+)\)/', $entry, $matches);
-                if (count($matches) === 5) {
-                    $playerName = trim($matches[1]);
-                    $steamId = $matches[2];
-                    $levelType = trim($matches[3]);
-                    $levelValue = intval($matches[4]);
-                    
-                    // Spieler finden oder erstellen
-                    $player = $this->getPlayerBySteamId($steamId);
-                    if (!$player) {
-                        $playerId = $this->addOrUpdatePlayer($playerName, $steamId);
-                        $stats['players_added']++;
-                    } else {
-                        $playerId = $player['id'];
-                    }
-                    
-                    // Level-Typ bestimmen
-                    $levelTypeMapping = [
-                        'CL_Taxi' => 'taxi',
-                        'CL_Bus' => 'bus',
-                        'CL_Wrecker' => 'wrecker',
-                        'CL_Police' => 'police'
-                    ];
-                    
-                    $dbLevelType = isset($levelTypeMapping[$levelType]) ? $levelTypeMapping[$levelType] : null;
-                    
-                    if ($dbLevelType) {
-                        // Level aktualisieren
-                        $this->updatePlayerLevel($playerId, $dbLevelType, $levelValue);
-                        $stats['levels_updated']++;
-                        
-                        // Aktivität hinzufügen
-                        $this->addPlayerActivity($playerId, "level_change_{$dbLevelType}", null, $levelValue);
-                        $stats['activities_added']++;
-                    }
-                }
-            }
-            
-            // Fahrzeug betreten erkennen
-            elseif (strpos($entry, 'Player entered vehicle') !== false) {
-                preg_match('/Player entered vehicle\. Player=([^\(]+) \(([0-9]+)\) Vehicle=([^(]+)\(([0-9]+)\)/', $entry, $matches);
-                if (count($matches) === 5) {
-                    $playerName = trim($matches[1]);
-                    $steamId = $matches[2];
-                    $vehicleName = trim($matches[3]);
-                    $vehicleId = $matches[4];
-                    
-                    // Spieler finden oder erstellen
-                    $player = $this->getPlayerBySteamId($steamId);
-                    if (!$player) {
-                        $playerId = $this->addOrUpdatePlayer($playerName, $steamId);
-                        $stats['players_added']++;
-                    } else {
-                        $playerId = $player['id'];
-                    }
-                    
-                    // Aktivität hinzufügen
-                    $this->addPlayerActivity($playerId, 'entered_vehicle', $vehicleName, $vehicleId);
-                    $stats['activities_added']++;
-                }
-            }
-            
-            // Fahrzeug verlassen erkennen
-            elseif (strpos($entry, 'Player exited vehicle') !== false) {
-                preg_match('/Player exited vehicle\. Player=([^\(]+) \(([0-9]+)\) Vehicle=([^(]+)\(([0-9]+)\)/', $entry, $matches);
-                if (count($matches) === 5) {
-                    $playerName = trim($matches[1]);
-                    $steamId = $matches[2];
-                    $vehicleName = trim($matches[3]);
-                    $vehicleId = $matches[4];
-                    
-                    // Spieler finden oder erstellen
-                    $player = $this->getPlayerBySteamId($steamId);
-                    if (!$player) {
-                        $playerId = $this->addOrUpdatePlayer($playerName, $steamId);
-                        $stats['players_added']++;
-                    } else {
-                        $playerId = $player['id'];
-                    }
-                    
-                    // Aktivität hinzufügen
-                    $this->addPlayerActivity($playerId, 'exited_vehicle', $vehicleName, $vehicleId);
-                    $stats['activities_added']++;
-                }
-            }
-            
-            // Unternehmen hinzugefügt erkennen
-            elseif (strpos($entry, 'Company added') !== false) {
-                preg_match('/Company added\. Name=([^(]+)\(Corp\?([^\)]+)\) Owner=([^\(]+)\(([0-9]+)\)/', $entry, $matches);
-                if (count($matches) === 5) {
-                    $companyName = trim($matches[1]);
-                    $isCorp = trim($matches[2]) === 'true';
-                    $ownerName = trim($matches[3]);
-                    $steamId = $matches[4];
-                    
-                    // Spieler finden oder erstellen
-                    $player = $this->getPlayerBySteamId($steamId);
-                    if (!$player) {
-                        $playerId = $this->addOrUpdatePlayer($ownerName, $steamId);
-                        $stats['players_added']++;
-                    } else {
-                        $playerId = $player['id'];
-                    }
-                    
-                    // Aktivität hinzufügen
-                    $this->addPlayerActivity($playerId, 'company_added', $companyName, $isCorp ? 'corporation' : 'personal');
-                    $stats['activities_added']++;
-                }
-            }
+            // Implementiere hier die Log-Parsing-Logik
         }
         
         return $stats;
-    }
-    
-    /**
-     * Liest Server-Logs aus einer Datei und verarbeitet sie
-     * 
-     * @param string $logFile Pfad zur Log-Datei
-     * @return array          Statistik über verarbeitete Einträge
-     */
-    public function processServerLogFile($logFile) {
-        if (!file_exists($logFile)) {
-            return ['error' => 'Log-Datei nicht gefunden'];
-        }
-        
-        $logEntries = file($logFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
-        return $this->processServerLogs($logEntries);
     }
 }

@@ -149,6 +149,12 @@ function isDashboardAutoScrollEnabled() {
     return $('#dashboardLiveChatAutoScroll').is(':checked');
 }
 
+// Steam-ID verkürzen - zeigt die ersten und die letzten Ziffern
+function formatSteamIdShort(steamId) {
+    if (!steamId || steamId.length < 10) return steamId;
+    return steamId.substring(0, 5) + '...' + steamId.substring(steamId.length - 4);
+}
+
 // Dashboard Live-Chat Nachrichten abrufen
 function fetchDashboardChatMessages() {
     if (!$('#dashboardLiveChatMessages').length) return;
@@ -292,7 +298,12 @@ function updatePlayerTable(players, steamProfiles) {
                 <td><img src="${avatarUrl}" class="player-avatar rounded-circle" alt="Avatar" width="32" height="32"></td>
                 <td>${player.name}</td>
                 <td>${steamName}</td>
-                <td><a href="https://steamcommunity.com/profiles/${player.unique_id}" target="_blank" title="Steam-Profil anzeigen">${player.unique_id}</a></td>
+                <td>
+                    <a href="https://steamcommunity.com/profiles/${player.unique_id}" target="_blank" title="Steam-Profil anzeigen">
+                        <span class="steam-id-full">${player.unique_id}</span>
+                        <span class="steam-id-short">${formatSteamIdShort(player.unique_id)}</span>
+                    </a>
+                </td>
             `;
         
         // Prüfen, ob die Aktionen-Spalte angezeigt werden soll
@@ -356,7 +367,12 @@ function updateRecentPlayersTable(players, steamProfiles) {
                 <td><img src="${avatarUrl}" class="player-avatar rounded-circle" alt="Avatar" width="32" height="32"></td>
                 <td>${player.player_name}</td>
                 <td>${steamName}</td>
-                <td><a href="https://steamcommunity.com/profiles/${player.unique_id}" target="_blank" title="Steam-Profil anzeigen">${player.unique_id}</a></td>
+                <td>
+                    <a href="https://steamcommunity.com/profiles/${player.unique_id}" target="_blank" title="Steam-Profil anzeigen">
+                        <span class="steam-id-full">${player.unique_id}</span>
+                        <span class="steam-id-short">${formatSteamIdShort(player.unique_id)}</span>
+                    </a>
+                </td>
                 <td>${lastSeen}</td>`;
         
         // Prüfen, ob die Aktionen-Spalte angezeigt werden soll

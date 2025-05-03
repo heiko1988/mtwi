@@ -1,8 +1,14 @@
 // Server Control Script for MTWI Dashboard
 $(document).ready(function() {
+    // Variable für letzten bekannten Status
+    let lastKnownStatus = null;
+    let firstLoad = true;
+    
     // Initial Status laden
-    fetchServerStatus();
-    let serverStatusTimer = setInterval(fetchServerStatus, 10000); // alle 10s
+    fetchServerStatus(true);
+    let serverStatusTimer = setInterval(function() { 
+        fetchServerStatus(false); 
+    }, 10000); // alle 10s
 
     $('#btnServerStart').on('click', function() {
         sendServerCommand('start');
@@ -42,6 +48,7 @@ $(document).ready(function() {
     updateI18n();
 
     function sendServerCommand(cmd) {
+        // Bei Befehlen immer 'loading' anzeigen
         setServerBadge('loading');
         $.ajax({
             url: 'ajax_handler.php',
@@ -68,8 +75,13 @@ $(document).ready(function() {
         });
     }
 
-    function fetchServerStatus(force) {
-        setServerBadge('loading');
+    function fetchServerStatus(isForceUpdate) {
+        // Nur beim ersten Laden oder bei erzwungener Aktualisierung "Lädt..." anzeigen
+        if (firstLoad || isForceUpdate) {
+            setServerBadge('loading');
+            firstLoad = false;
+        }
+        
         $.ajax({
             url: 'ajax_handler.php',
             type: 'POST',
@@ -81,13 +93,14 @@ $(document).ready(function() {
             dataType: 'json',
             success: function(data) {
                 if (data.success && data.data && data.data.status) {
+                    // Status speichern
+                    lastKnownStatus = data.data.status;
                     setServerBadge(data.data.status, data.data.detail);
                 } else {
                     setServerBadge('error', data.message);
                 }
-                if (force) {
-                    $('#serverStatusTime').text(new Date().toLocaleTimeString());
-                }
+                // Zeitstempel immer aktualisieren
+                $('#serverStatusTime').text(new Date().toLocaleTimeString());
             },
             error: function() {
                 setServerBadge('error', 'Verbindung fehlgeschlagen');

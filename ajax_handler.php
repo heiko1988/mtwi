@@ -1286,9 +1286,6 @@ $testClient = new ApiClient($apiUrl, $apiPassword);
             $config['api']['password'] = $apiPassword;
         }
         
-        // Sicherstellen, dass setup_completed=true erhalten bleibt
-        $config['settings']['setup_completed'] = true;
-        
         // Konfiguration speichern
         if (!saveConfig($config)) {
             sendResponse(false, 'Fehler beim Speichern der Konfiguration');

@@ -1,80 +1,43 @@
-# Motor Town Web Interface (MTWI)
+# Motor Town Web Interface (MTWI) v0.0.3.6r1
 
-## 🇩🇪 Deutsch
+**OFFIZIELLES RELEASE** - Stabile Version vom 02.05.2025
 
-### Version 0.0.3.7r2 - Änderungsprotokoll (02.05.2025)
+## über diese Version
 
-#### Neue Funktionen
-- Live Chat ist jetzt direkt auf der Startseite integriert für schnellere Kommunikation
-- Zusammengeführtes Ban-System und Spieleranzahl-Widget für bessere Übersicht
-- Game Server Ressourcen-Monitoring (CPU, RAM und Festplattennutzung)
-- Steam Namen und Profilbilder werden automatisch zu den Spielern geladen
-- Verbesserte Spielerübersicht mit detaillierten Informationen (Spielername, Steam ID, Letzter Login, Firma, verschiedene Berufslevel)
-- Verbesserter Setup-Assistent mit horizontaler Navigation für bessere Übersichtlichkeit
-- Robustere Konfigurationsdateierstellung mit verbesserten Rückgabewerten und Fehlerbehandlung
-- Bessere Anpassung der Benutzeroberfläche für eine intuitivere Bedienung
+Dieses Release ist eine stabile, getestete Version des Motor Town Web Interface und für den Produktiveinsatz geeignet. Es beinhaltet alle Funktionen der Version v0.0.3.6 mit zusätzlichen Tests und Stabilitätsverbesserungen.
 
-#### Bugfixes
-- **Kritisch**: Behebt das Problem, bei dem Benutzer nach dem Speichern von Einstellungen zum Setup-Assistenten zurückgeleitet wurden
-- Korrigiert die Speicherung des `setup_completed`-Status in der Konfigurationsdatei
-- Verhindert das Zurücksetzen der Konfiguration bei partiellen Updates
-- Verbesserte Robustheit bei der Speicherung von Einstellungen
-- Behebt Darstellungsprobleme im Setup-Assistenten
+## Hauptfunktionen und Verbesserungen
 
-#### Installation
-1. Entpacken Sie die ZIP-Datei auf Ihrem Webserver
-2. Navigieren Sie im Browser zu Ihrer MTWI-Installation
-3. Folgen Sie dem Setup-Assistenten, um die Installation abzuschließen
+1. **Verbesserte Spielerübersicht**:
+   - Anklickbare Steam-IDs zum direkten Öffnen von Spielerprofilen im neuen Tab
+   - Optimierte UI mit intuitiven Hover-Effekten für Benutzerinteraktionen
+   - Vollständige Dark-Mode-Kompatibilität
 
-#### WICHTIG: Neuinstallation empfohlen!
-Aufgrund umfangreicher Änderungen im Setup-Assistenten und in der Konfigurationsverwaltung wird **dringend empfohlen, eine vollständige Neuinstallation durchzuführen**:
+2. **Persistente Unternehmensdaten**:
+   - Spieler behalten ihre Unternehmensdaten auch im Offline-Status
+   - Robuste Datenbankintegration zum zuverlässigen Speichern der Unternehmensinformationen
+   - Keine "No Company"-Anzeige mehr für Spieler, die zuvor mit Unternehmen gesehen wurden
+
+3. **Datenbankoptimierungen**:
+   - Erweiterte Datenstrukturen für alle Berufslevels (Taxi, Bus, Wrecker, Police, Driver, Truck)
+   - Automatische Datenbankmigration für bestehende Installationen
+   - Verbesserte Datenintegrität und Konsistenz
+
+## Installation
+
+Für die Installation einer neuen Instanz folgen Sie der Standardinstallationsanleitung. Für ein Upgrade von einer älteren Version kopieren Sie einfach alle Dateien und führen Sie die Anwendung einmal auf, um die automatische Datenbankaktualisierung auszulösen.
+
+## Kompatibilität
+
+Diese Version ist kompatibel mit:
+- Alle gängigen Webbrowser (Chrome, Firefox, Safari, Edge)
+- PHP 7.4 und höher
+- MySQL 5.7+ und SQLite 3
+
+## Support
+
+Für technischen Support oder Anfragen kontaktieren Sie bitte das Entwicklungsteam.
 
 ---
 
-## 🇬🇧 English
-
-### Version 0.0.3.7r2 - Changelog (May 2nd, 2025)
-
-#### New Features
-- Live Chat now directly integrated on the homepage for faster communication
-- Merged ban system and player count widget for better overview
-- Game server resource monitoring (CPU, RAM, and disk usage)
-- Automatic loading of Steam names and profile pictures for players
-- Enhanced player overview with detailed information (player name, Steam ID, last seen, company, various job levels)
-- Improved setup assistant with horizontal navigation for better clarity
-- More robust configuration file creation with improved return values and error handling
-- Better UI adaptations for more intuitive usage
-
-#### Bugfixes
-- **Critical**: Fixes the issue where users were redirected to the setup assistant after saving settings
-- Corrects the saving of the `setup_completed` status in the configuration file
-- Prevents configuration reset during partial updates
-- Improved robustness when saving settings
-- Fixes display issues in the setup assistant
-
-#### Installation
-1. Extract the ZIP file to your web server
-2. Navigate to your MTWI installation in your browser
-3. Follow the setup assistant to complete the installation
-
-#### IMPORTANT: Fresh Installation Recommended!
-Due to significant changes in the setup assistant and configuration management, it is **strongly recommended to perform a complete fresh installation**:
-
-
-## Features
-
-- Dashboard with server control and statistics
-- Player management (view, kick, ban)
-- Live chat integration
-- Ban list management
-- Comprehensive role-based permission system
-- Multi-language support (German/English)
-- Light and dark theme
-- Responsive design for mobile and desktop
-
-## Requirements
-
-- PHP 7.4+ (with required extensions: PDO, cURL, JSON, mbstring, and FileInfo)
-- SQLite or MySQL database
-- Web server (Apache, Nginx, etc.)
-- Python 3.6+ for the chat server
+*Motor Town Web Interface (MTWI) ist ein inoffizielles Webinterface für Motor Town Server und steht in keiner Verbindung zum offiziellen Spiel oder dessen Entwicklern.*

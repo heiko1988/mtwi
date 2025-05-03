@@ -31,6 +31,8 @@ if (isset($currentPage) && $currentPage === 'setup') {
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
     <!-- Custom CSS -->
     <link href="assets/css/style.css" rel="stylesheet">
+    <!-- Steam ID Responsive CSS -->
+    <link href="assets/css/steam-id-responsive.css" rel="stylesheet">
     <!-- Theme CSS -->
     <link href="assets/css/<?php echo $currentTheme; ?>.css" rel="stylesheet" id="theme-css">
     <!-- Favicon -->
